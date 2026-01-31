@@ -1,0 +1,154 @@
+.generator-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  min-height: 400px;
+}
+
+.spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1.5rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.generator-loading h3 {
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.generator-loading p {
+  color: #666;
+}
+
+.generator-error {
+  padding: 2rem;
+  text-align: center;
+  color: #d32f2f;
+}
+
+.generator-error h3 {
+  margin-bottom: 1rem;
+}
+
+.generator-error p {
+  margin-bottom: 0.5rem;
+}
+
+.error-hint {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: #fff3cd;
+  border-radius: 8px;
+  color: #856404;
+  font-size: 0.9rem;
+}
+
+.video-generator {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.generator-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.generator-header h2 {
+  color: #333;
+  margin: 0;
+}
+
+.slide-counter {
+  color: #666;
+  font-weight: 500;
+}
+
+.slide-container {
+  min-height: 500px;
+  background: #f9f9f9;
+  border-radius: 12px;
+  padding: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.slide-controls {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.control-button {
+  padding: 0.75rem 2rem;
+  background: white;
+  border: 2px solid #667eea;
+  color: #667eea;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.control-button:hover:not(:disabled) {
+  background: #667eea;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.control-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.video-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.action-button {
+  padding: 0.75rem 2rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.action-button.primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.action-button.primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.action-button:not(.primary) {
+  background: white;
+  border: 2px solid #ddd;
+  color: #333;
+}
+
+.action-button:not(.primary):hover {
+  border-color: #667eea;
+  color: #667eea;
+}

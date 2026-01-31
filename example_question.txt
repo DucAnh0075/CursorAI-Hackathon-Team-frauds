@@ -1,0 +1,5 @@
+Question 1: Solve the quadratic equation x² + 5x + 6 = 0
+
+Question 2: Find the derivative of f(x) = 3x³ + 2x² - 5x + 1
+
+Question 3: Calculate the integral of ∫(2x + 3)dx from 0 to 5
