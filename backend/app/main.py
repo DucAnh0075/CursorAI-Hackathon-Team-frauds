@@ -4,14 +4,15 @@ Clean main entry point
 """
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 
 from app.core.config import settings
-from app.routers import chat, upload, health
+from app.routers import chat, upload, health, video
 
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.VERSION,
-    description="AI-powered study assistant API"
+    description="AI-powered study assistant API with Manus AI chat and MiniMax video generation"
 )
 
 # CORS middleware
@@ -27,3 +28,4 @@ app.add_middleware(
 app.include_router(health.router, tags=["Health"])
 app.include_router(chat.router, prefix="/api/chat", tags=["Chat"])
 app.include_router(upload.router, prefix="/api/upload", tags=["Upload"])
+app.include_router(video.router, prefix="/api/video", tags=["Video"])

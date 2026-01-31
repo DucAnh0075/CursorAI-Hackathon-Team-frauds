@@ -15,12 +15,24 @@ class Settings(BaseSettings):
     MINIMAX_API_KEY: str = ""
     MANUS_API_KEY: str = ""
     
+    # Manus AI Settings
+    MANUS_API_BASE_URL: str = "https://api.manus.ai/v1"
+    MANUS_MODEL: str = "manus-1"
+    
+    # MiniMax Video Settings
+    MINIMAX_API_BASE_URL: str = "https://api.minimax.chat/v1"
+    MINIMAX_VIDEO_MODEL: str = "video-01"
+    MINIMAX_GROUP_ID: str = ""
+    
     # CORS
-    CORS_ORIGINS: List[str] = ["http://localhost:5173", "http://localhost:3000"]
+    CORS_ORIGINS: List[str] = ["http://localhost:5173", "http://localhost:5174", "http://localhost:3000"]
     
     # Upload settings
     MAX_UPLOAD_SIZE: int = 10 * 1024 * 1024  # 10MB
     ALLOWED_EXTENSIONS: List[str] = ["png", "jpg", "jpeg", "gif", "webp", "pdf"]
+    
+    # Video output settings
+    VIDEO_OUTPUT_DIR: str = "generated_videos"
     
     class Config:
         env_file = ".env"
