@@ -9,13 +9,14 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
   },
   "dependencies": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
     "axios": "^1.6.0",
-    "react-dropzone": "^14.2.3",
+    "dotenv": "^17.2.3",
     "fabric": "^5.3.0",
     "html2canvas": "^1.4.1",
-    "jspdf": "^2.5.1"
+    "jspdf": "^2.5.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-dropzone": "^14.2.3"
   },
   "devDependencies": {
     "@types/react": "^18.2.43",
