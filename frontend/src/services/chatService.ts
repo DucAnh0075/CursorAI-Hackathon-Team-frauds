@@ -8,6 +8,16 @@ const api = axios.create({
   },
 })
 
+export interface VideoGenerationResponse {
+  success: boolean
+  task_id?: string
+  status?: string
+  message?: string
+  video_url?: string
+  error?: string
+  estimated_time?: string
+}
+
 export const chatService = {
   async sendMessage(
     message: string,
@@ -42,5 +52,56 @@ export const chatService = {
     })
 
     return response.data.data
+  },
+
+  // Video Generation APIs
+  async generateVideo(
+    topic: string,
+    problemContext?: string,
+    style: 'educational' | 'explainer' | 'tutorial' = 'educational'
+  ): Promise<VideoGenerationResponse> {
+    try {
+      const response = await api.post<VideoGenerationResponse>('/video/generate', {
+        topic,
+        problem_context: problemContext,
+        style,
+      })
+      return response.data
+    } catch (error) {
+      console.error('Video generation API error:', error)
+      throw error
+    }
+  },
+
+  async checkVideoStatus(taskId: string): Promise<VideoGenerationResponse> {
+    try {
+      const response = await api.get<VideoGenerationResponse>(`/video/status/${taskId}`)
+      return response.data
+    } catch (error) {
+      console.error('Video status API error:', error)
+      throw error
+    }
+  },
+
+  async generateVideoSync(
+    topic: string,
+    problemContext?: string,
+    style: 'educational' | 'explainer' | 'tutorial' = 'educational'
+  ): Promise<VideoGenerationResponse> {
+    try {
+      const response = await api.post<VideoGenerationResponse>(
+        '/video/generate-sync',
+        {
+          topic,
+          problem_context: problemContext,
+          style,
+        },
+        { timeout: 360000 } // 6 minute timeout for sync video generation
+      )
+      return response.data
+    } catch (error) {
+      console.error('Video generation sync API error:', error)
+      throw error
+    }
   },
 }

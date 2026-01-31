@@ -28,7 +28,7 @@ yarn-error.log*
 *.swp
 *.swo
 
-# Python (old)
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
@@ -37,3 +37,9 @@ __pycache__/
 venv/
 ENV/
 .venv
+
+# Backend specific
+backend/.env
+backend/generated_videos/
+*.mp4
+*.webm
