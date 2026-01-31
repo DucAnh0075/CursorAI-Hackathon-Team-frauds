@@ -64,6 +64,9 @@ Format your response in a way that's easy to narrate in a video.`
 
   private async callMinimax(prompt: string): Promise<Explanation> {
     const apiKey = import.meta.env.VITE_MINIMAX_API_KEY
+    if (!apiKey) {
+      throw new Error('VITE_MINIMAX_API_KEY is not set')
+    }
     const groupId = import.meta.env.VITE_MINIMAX_GROUP_ID || ''
 
     const url = 'https://api.minimax.chat/v1/text/chatcompletion_pro'
@@ -122,6 +125,9 @@ Format your response in a way that's easy to narrate in a video.`
 
   private async callManus(prompt: string): Promise<Explanation> {
     const apiKey = import.meta.env.VITE_MANUS_API_KEY
+    if (!apiKey) {
+      throw new Error('VITE_MANUS_API_KEY is not set')
+    }
     const url = 'https://api.manus.ai/v1/chat/completions'
     
     const headers = {
@@ -164,6 +170,9 @@ Format your response in a way that's easy to narrate in a video.`
     // For OpenAI, we'd need to use their SDK or make direct API calls
     // Since we're in browser, we'll use axios
     const apiKey = import.meta.env.VITE_OPENAI_API_KEY
+    if (!apiKey) {
+      throw new Error('VITE_OPENAI_API_KEY is not set')
+    }
     const url = 'https://api.openai.com/v1/chat/completions'
 
     const headers = {

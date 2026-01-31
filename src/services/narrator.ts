@@ -24,7 +24,7 @@ export class Narrator {
     })
   }
 
-  async generateAudioBlob(text: string): Promise<Blob> {
+  async generateAudioBlob(_text: string): Promise<Blob> {
     // For actual audio file generation, we'd need a backend service
     // or use a TTS API. For now, return empty blob as placeholder
     // In production, you'd call a TTS service or backend endpoint
