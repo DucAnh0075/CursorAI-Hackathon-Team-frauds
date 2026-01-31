@@ -35,7 +35,7 @@ class Settings(BaseSettings):
     VIDEO_OUTPUT_DIR: str = "generated_videos"
     
     class Config:
-        env_file = ".env"
+        env_file = "../.env"
         extra = "ignore"
 
 
