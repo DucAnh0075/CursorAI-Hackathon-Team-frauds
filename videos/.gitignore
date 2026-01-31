@@ -1,4 +1,0 @@
-# Keep videos directory in git but ignore video files
-*
-!.gitignore
-!README.md
