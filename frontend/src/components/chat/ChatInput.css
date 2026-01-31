@@ -1,0 +1,132 @@
+.chat-input {
+  max-width: 800px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.chat-input-welcome {
+  /* No transform needed anymore */
+}
+
+.chat-input-container {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  transition: border-color var(--transition-fast);
+}
+
+.chat-input-container:focus-within {
+  border-color: var(--color-accent);
+}
+
+.chat-input-attach {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-tertiary);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+}
+
+.chat-input-attach:hover {
+  color: var(--color-text-primary);
+  background: var(--color-bg-tertiary);
+}
+
+.chat-input-textarea {
+  flex: 1;
+  min-height: 40px;
+  max-height: 200px;
+  padding: var(--spacing-sm) 0;
+  resize: none;
+  line-height: 1.5;
+  background: transparent;
+}
+
+.chat-input-textarea:focus {
+  outline: none;
+}
+
+.chat-input-file {
+  display: none;
+}
+
+/* Attachments (images and PDFs) */
+.chat-input-attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  padding-bottom: 0;
+}
+
+.chat-input-attachment-preview {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--color-bg-tertiary);
+}
+
+.chat-input-attachment-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.chat-input-attachment-preview.pdf {
+  width: auto;
+  min-width: 120px;
+  max-width: 200px;
+  height: auto;
+  padding: var(--spacing-sm);
+}
+
+.chat-input-pdf {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  color: var(--color-text-secondary);
+}
+
+.chat-input-pdf span {
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
+}
+
+.chat-input-attachment-remove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 50%;
+  color: white;
+  transition: background var(--transition-fast);
+}
+
+.chat-input-attachment-remove:hover {
+  background: var(--color-error);
+}
+
+.chat-input-hint {
+  text-align: center;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  margin-top: var(--spacing-sm);
+}
