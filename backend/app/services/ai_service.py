@@ -26,13 +26,21 @@ class AIService:
         conversation_history: Optional[List[Message]] = None
     ) -> str:
         """
-        Generate AI response - Manus AI is the primary provider
-        Priority: Manus -> OpenAI -> Mock
+        Generate AI response - OpenAI is the primary provider for now
+        Priority: OpenAI -> Manus -> Mock
         """
-        if self.manus_key:
-            return await self._manus_response(message, images, conversation_history)
-        elif self.openai_key:
-            return await self._openai_response(message, images, conversation_history)
+        if self.openai_key:
+            try:
+                return await self._openai_response(message, images, conversation_history)
+            except Exception as e:
+                print(f"OpenAI API error: {e}")
+                return self._mock_response(message)
+        elif self.manus_key:
+            try:
+                return await self._manus_response(message, images, conversation_history)
+            except Exception as e:
+                print(f"Manus API error: {e}")
+                return self._mock_response(message)
         else:
             return self._mock_response(message)
     
@@ -61,29 +69,40 @@ class AIService:
         history: Optional[List[Message]] = None
     ) -> str:
         """Generate response using Manus AI API"""
-        async with httpx.AsyncClient() as client:
-            messages = self._build_messages(message, images, history)
-            
-            response = await client.post(
-                f"{self.manus_base_url}/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {self.manus_key}",
-                    "Content-Type": "application/json"
-                },
-                json={
-                    "model": self.manus_model,
-                    "messages": messages,
-                    "max_tokens": 4096,
-                    "temperature": 0.7
-                },
-                timeout=120.0
-            )
-            
-            if response.status_code == 200:
-                data = response.json()
-                return data["choices"][0]["message"]["content"]
-            else:
-                raise Exception(f"Manus AI API error: {response.status_code} - {response.text}")
+        try:
+            async with httpx.AsyncClient() as client:
+                messages = self._build_messages(message, images, history)
+                
+                response = await client.post(
+                    f"{self.manus_base_url}/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {self.manus_key}",
+                        "Content-Type": "application/json"
+                    },
+                    json={
+                        "model": self.manus_model,
+                        "messages": messages,
+                        "max_tokens": 4096,
+                        "temperature": 0.7
+                    },
+                    timeout=120.0
+                )
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    return data["choices"][0]["message"]["content"]
+                else:
+                    print(f"Manus AI API error: {response.status_code} - {response.text}")
+                    # Fall back to OpenAI if available
+                    if self.openai_key:
+                        return await self._openai_response(message, images, history)
+                    return self._mock_response(message)
+        except Exception as e:
+            print(f"Manus AI error: {e}")
+            # Fall back to OpenAI if available
+            if self.openai_key:
+                return await self._openai_response(message, images, history)
+            return self._mock_response(message)
     
     async def _manus_stream(
         self,
