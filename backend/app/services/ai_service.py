@@ -23,25 +23,42 @@ class AIService:
         self,
         message: str,
         images: Optional[List[str]] = None,
-        conversation_history: Optional[List[Message]] = None
+        conversation_history: Optional[List[Message]] = None,
+        model: str = "openai"
     ) -> str:
         """
-        Generate AI response - OpenAI is the primary provider for now
-        Priority: OpenAI -> Manus -> Mock
+        Generate AI response with specified model
+        Models: "openai" or "manus"
+        Falls back based on availability
         """
-        if self.openai_key:
+        if model == "manus" and self.manus_key:
             try:
-                return await self._openai_response(message, images, conversation_history)
-            except Exception as e:
-                print(f"OpenAI API error: {e}")
-                return self._mock_response(message)
-        elif self.manus_key:
-            try:
+                print(f"[AI Service] Using Manus AI API")
                 return await self._manus_response(message, images, conversation_history)
             except Exception as e:
-                print(f"Manus API error: {e}")
+                print(f"[AI Service] Manus API error: {e}")
+                if self.openai_key:
+                    try:
+                        print(f"[AI Service] Falling back to OpenAI API")
+                        return await self._openai_response(message, images, conversation_history)
+                    except Exception as oe:
+                        print(f"[AI Service] OpenAI fallback error: {oe}")
+                return self._mock_response(message)
+        elif self.openai_key:
+            try:
+                print(f"[AI Service] Using OpenAI API")
+                return await self._openai_response(message, images, conversation_history)
+            except Exception as e:
+                print(f"[AI Service] OpenAI API error: {e}")
+                if self.manus_key:
+                    try:
+                        print(f"[AI Service] Falling back to Manus AI API")
+                        return await self._manus_response(message, images, conversation_history)
+                    except Exception as me:
+                        print(f"[AI Service] Manus fallback error: {me}")
                 return self._mock_response(message)
         else:
+            print(f"[AI Service] No API keys available, using mock response")
             return self._mock_response(message)
     
     async def stream_response(

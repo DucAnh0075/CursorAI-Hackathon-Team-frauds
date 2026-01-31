@@ -6,8 +6,16 @@ import './Settings.css'
 export function Settings() {
   const [isOpen, setIsOpen] = useState(false)
   const [showModal, setShowModal] = useState(false)
+  const [selectedModel, setSelectedModel] = useState<string>(() => {
+    return localStorage.getItem('selectedModel') || 'openai'
+  })
   const menuRef = useRef<HTMLDivElement>(null)
   const { theme, toggleTheme, setTheme } = useTheme()
+
+  const handleModelChange = (model: string) => {
+    setSelectedModel(model)
+    localStorage.setItem('selectedModel', model)
+  }
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -90,6 +98,30 @@ export function Settings() {
                     </button>
                   </div>
                 </div>
+              </div>
+
+              <div className="settings-section">
+                <h3>AI Model</h3>
+                <div className="settings-option">
+                  <label>Select Model</label>
+                  <div className="settings-model-toggle">
+                    <button
+                      className={`settings-model-btn ${selectedModel === 'openai' ? 'active' : ''}`}
+                      onClick={() => handleModelChange('openai')}
+                    >
+                      OpenAI
+                    </button>
+                    <button
+                      className={`settings-model-btn ${selectedModel === 'manus' ? 'active' : ''}`}
+                      onClick={() => handleModelChange('manus')}
+                    >
+                      Manus AI
+                    </button>
+                  </div>
+                </div>
+                <p className="settings-model-info">
+                  Current: <strong>{selectedModel === 'openai' ? 'OpenAI GPT' : 'Manus AI'}</strong>
+                </p>
               </div>
 
               <div className="settings-section">

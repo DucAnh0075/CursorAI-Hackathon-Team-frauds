@@ -22,9 +22,14 @@ export const chatService = {
   async sendMessage(
     message: string,
     images: string[] = [],
-    history: Message[] = []
+    history: Message[] = [],
+    model: string = 'openai'
   ): Promise<ChatResponse> {
     try {
+      console.log(`[API Call] Sending message with model: ${model}`)
+      console.log(`[API Call] Message: "${message.substring(0, 50)}${message.length > 50 ? '...' : ''}"`)
+      console.log(`[API Call] Images: ${images.length}`)
+      
       const response = await api.post<ChatResponse>('/chat/message', {
         message,
         images,
@@ -33,10 +38,13 @@ export const chatService = {
           content: msg.content,
           images: msg.images?.map(img => img.data),
         })),
+        model,
       })
+      
+      console.log(`[API Response] Received from ${model}:`, response.data.message.substring(0, 100))
       return response.data
     } catch (error) {
-      console.error('Chat API error:', error)
+      console.error(`[API Error] Failed to call ${model} API:`, error)
       throw error
     }
   },
