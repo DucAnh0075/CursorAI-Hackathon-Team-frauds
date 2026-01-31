@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 
 from app.core.config import settings
-from app.routers import chat, upload, health, video
+from app.routers import chat, upload, health, video, explanation, reasoning
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -29,4 +29,5 @@ app.include_router(health.router, tags=["Health"])
 app.include_router(chat.router, prefix="/api/chat", tags=["Chat"])
 app.include_router(upload.router, prefix="/api/upload", tags=["Upload"])
 app.include_router(video.router, prefix="/api/video", tags=["Video"])
-app.include_router(video.router, prefix="/api/video", tags=["Video"])
+app.include_router(explanation.router, prefix="/api", tags=["Explanation"])
+app.include_router(reasoning.router, prefix="/api", tags=["Reasoning"])

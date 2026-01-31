@@ -17,18 +17,27 @@ async def send_message(request: ChatRequest):
     Send a message to the AI assistant
     Supports text and image attachments
     Model can be specified: "openai" or "manus"
+    reasoning_mode: enables step-by-step explanations with visualizations
     """
     try:
         model = request.model or "openai"
-        print(f"[API Call] Received message with model: {model}")
+        reasoning_mode = request.reasoning_mode or False
+        
+        print(f"[API Call] Received message with model: {model}, reasoning: {reasoning_mode}")
         print(f"[API Call] Message: '{request.message[:50]}{'...' if len(request.message) > 50 else ''}'")
-        print(f"[API Call] Images: {len(request.images) if request.images else 0}")
+        
+        images = request.images or []
+        print(f"[API Call] Images: {len(images)}")
+        if images:
+            for i, img in enumerate(images):
+                print(f"[API Call] Image {i}: {img[:60]}...")
         
         response = await ai_service.generate_response(
             message=request.message,
-            images=request.images,
+            images=images if images else None,
             conversation_history=request.history,
-            model=model
+            model=model,
+            reasoning_mode=reasoning_mode
         )
         
         print(f"[API Response] Generated response from {model}: {response[:100]}...")

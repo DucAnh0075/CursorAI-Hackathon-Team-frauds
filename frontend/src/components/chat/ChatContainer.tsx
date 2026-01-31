@@ -3,6 +3,7 @@ import { Message, ImageAttachment, ChatSession } from '@/types/chat'
 import { ChatMessage } from './ChatMessage'
 import { ChatInput } from './ChatInput'
 import { WelcomeScreen } from './WelcomeScreen'
+import { InteractiveReasoning } from './InteractiveReasoning'
 import { chatService } from '@services/chatService'
 import './ChatContainer.css'
 
@@ -14,6 +15,10 @@ interface ChatContainerProps {
 
 export function ChatContainer({ session, onNewSession, onAddMessage }: ChatContainerProps) {
   const [isLoading, setIsLoading] = useState(false)
+  const [reasoningMode, setReasoningMode] = useState(false)
+  const [showReasoning, setShowReasoning] = useState(false)
+  const [reasoningProblem, setReasoningProblem] = useState('')
+  const [reasoningImage, setReasoningImage] = useState<string | undefined>()
   const [abortController, setAbortController] = useState<AbortController | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
@@ -36,7 +41,11 @@ export function ChatContainer({ session, onNewSession, onAddMessage }: ChatConta
     }
   }
 
-  const handleSendMessage = async (content: string, images: ImageAttachment[]) => {
+  const toggleReasoningMode = () => {
+    setReasoningMode(prev => !prev)
+  }
+
+  const handleSendMessage = async (content: string, images: ImageAttachment[], pdfTexts?: string[]) => {
     // Create session if none exists
     let currentSession = session
     if (!currentSession) {
@@ -46,16 +55,32 @@ export function ChatContainer({ session, onNewSession, onAddMessage }: ChatConta
     // Get selected model from localStorage
     const selectedModel = localStorage.getItem('selectedModel') || 'openai'
 
+    // Build the full message content including PDF text
+    let fullContent = content
+    if (pdfTexts && pdfTexts.length > 0) {
+      const pdfContent = pdfTexts.map((text, i) => `\n\n--- PDF Document ${i + 1} ---\n${text}`).join('')
+      fullContent = content + pdfContent
+    }
+
     // Create user message
     const userMessage: Message = {
       id: crypto.randomUUID(),
       role: 'user',
-      content,
+      content: fullContent,
       images: images.length > 0 ? images : undefined,
       timestamp: new Date()
     }
     
     onAddMessage(userMessage)
+    
+    // If reasoning mode is enabled, use interactive reasoning
+    if (reasoningMode) {
+      setReasoningProblem(fullContent)
+      setReasoningImage(images.length > 0 ? images[0].data : undefined)
+      setShowReasoning(true)
+      return
+    }
+    
     setIsLoading(true)
     
     // Create abort controller for this request
@@ -67,11 +92,15 @@ export function ChatContainer({ session, onNewSession, onAddMessage }: ChatConta
     try {
       // Send to API
       const messages = currentSession?.messages || []
+      const imageData = images.map(img => img.data)
+      console.log('[ChatContainer] Sending images:', imageData.length, 'images')
+      
       const response = await chatService.sendMessage(
-        content,
-        images.map(img => img.data),
+        fullContent,
+        imageData,
         messages,
-        selectedModel
+        selectedModel,
+        false  // Regular mode
       )
 
       // Create assistant message
@@ -101,6 +130,22 @@ export function ChatContainer({ session, onNewSession, onAddMessage }: ChatConta
     }
   }
 
+  const handleReasoningComplete = () => {
+    setShowReasoning(false)
+    // Add a completion message
+    const completionMessage: Message = {
+      id: crypto.randomUUID(),
+      role: 'assistant',
+      content: '✓ Step-by-step explanation completed.',
+      timestamp: new Date()
+    }
+    onAddMessage(completionMessage)
+  }
+
+  const handleReasoningCancel = () => {
+    setShowReasoning(false)
+  }
+
   const messages = session?.messages || []
   const showWelcome = messages.length === 0
 
@@ -114,6 +159,17 @@ export function ChatContainer({ session, onNewSession, onAddMessage }: ChatConta
             {messages.map((message) => (
               <ChatMessage key={message.id} message={message} />
             ))}
+            
+            {/* Interactive Reasoning Panel */}
+            {showReasoning && (
+              <InteractiveReasoning
+                problem={reasoningProblem}
+                image={reasoningImage}
+                onComplete={handleReasoningComplete}
+                onCancel={handleReasoningCancel}
+              />
+            )}
+            
             {isLoading && (
               <div className="chat-loading">
                 <div className="chat-loading-indicator">
@@ -137,6 +193,8 @@ export function ChatContainer({ session, onNewSession, onAddMessage }: ChatConta
           onStop={handleStop}
           isLoading={isLoading}
           isWelcome={showWelcome}
+          reasoningMode={reasoningMode}
+          onToggleReasoningMode={toggleReasoningMode}
         />
       </div>
     </div>
