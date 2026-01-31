@@ -73,11 +73,15 @@
 }
 
 .chat-message-text p {
-  margin: 0;
+  margin: 0 0 0.5em 0;
+}
+
+.chat-message-text p:last-child {
+  margin-bottom: 0;
 }
 
 .chat-message-text p + p {
-  margin-top: var(--spacing-sm);
+  margin-top: 0.5em;
 }
 
 /* Code blocks */
@@ -100,4 +104,77 @@
 .chat-message-text pre code {
   padding: 0;
   background: none;
+}
+
+/* Math/KaTeX styling */
+.chat-message-text .katex-display {
+  margin: 0.75em 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.25em 0;
+}
+
+.chat-message-text .katex {
+  font-size: 1.05em;
+}
+
+/* Markdown styling */
+.chat-message-text h1,
+.chat-message-text h2,
+.chat-message-text h3,
+.chat-message-text h4 {
+  margin-top: 1em;
+  margin-bottom: 0.5em;
+  font-weight: 600;
+}
+
+.chat-message-text h1:first-child,
+.chat-message-text h2:first-child,
+.chat-message-text h3:first-child {
+  margin-top: 0;
+}
+
+.chat-message-text h1 { font-size: 1.4em; }
+.chat-message-text h2 { font-size: 1.25em; }
+.chat-message-text h3 { font-size: 1.1em; }
+
+.chat-message-text ul,
+.chat-message-text ol {
+  margin: 0.5em 0;
+  padding-left: 1.5em;
+}
+
+.chat-message-text li {
+  margin: var(--spacing-xs) 0;
+}
+
+.chat-message-text blockquote {
+  border-left: 3px solid var(--color-accent);
+  margin: var(--spacing-sm) 0;
+  padding-left: var(--spacing-md);
+  color: var(--color-text-secondary);
+}
+
+.chat-message-text table {
+  border-collapse: collapse;
+  margin: var(--spacing-sm) 0;
+  width: 100%;
+}
+
+.chat-message-text th,
+.chat-message-text td {
+  border: 1px solid var(--color-border);
+  padding: var(--spacing-sm);
+  text-align: left;
+}
+
+.chat-message-text th {
+  background: var(--color-bg-tertiary);
+  font-weight: 600;
+}
+
+.chat-message-text hr {
+  border: none;
+  border-top: 1px solid var(--color-border);
+  margin: var(--spacing-md) 0;
 }

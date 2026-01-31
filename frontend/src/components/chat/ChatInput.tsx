@@ -1,33 +1,48 @@
 import { useState, useRef, useCallback, KeyboardEvent, ChangeEvent, ClipboardEvent } from 'react'
-import { Send, X, Paperclip, FileText, Square } from 'lucide-react'
+import { Send, X, Paperclip, FileText, Square, Loader2, Brain } from 'lucide-react'
 import { Button } from '@components/ui/Button'
 import { ImageAttachment } from '@/types/chat'
+import { chatService } from '@/services/chatService'
 import './ChatInput.css'
 
 interface ChatInputProps {
-  onSend: (message: string, images: ImageAttachment[]) => void
+  onSend: (message: string, images: ImageAttachment[], pdfTexts?: string[]) => void
   onStop?: () => void
   isLoading: boolean
   isWelcome?: boolean
+  reasoningMode: boolean
+  onToggleReasoningMode: () => void
 }
 
-export function ChatInput({ onSend, onStop, isLoading, isWelcome }: ChatInputProps) {
+interface PdfAttachment {
+  id: string
+  name: string
+  text: string
+  isLoading?: boolean
+}
+
+export function ChatInput({ onSend, onStop, isLoading, isWelcome, reasoningMode, onToggleReasoningMode }: ChatInputProps) {
   const [message, setMessage] = useState('')
   const [attachments, setAttachments] = useState<ImageAttachment[]>([])
+  const [pdfAttachments, setPdfAttachments] = useState<PdfAttachment[]>([])
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleSubmit = useCallback(() => {
-    if ((!message.trim() && attachments.length === 0) || isLoading) return
+    if ((!message.trim() && attachments.length === 0 && pdfAttachments.length === 0) || isLoading) return
     
-    onSend(message.trim(), attachments)
+    // Get PDF texts to include in the message
+    const pdfTexts = pdfAttachments.filter(p => !p.isLoading).map(p => p.text)
+    
+    onSend(message.trim(), attachments, pdfTexts.length > 0 ? pdfTexts : undefined)
     setMessage('')
     setAttachments([])
+    setPdfAttachments([])
     
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto'
     }
-  }, [message, attachments, isLoading, onSend])
+  }, [message, attachments, pdfAttachments, isLoading, onSend])
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -80,50 +95,78 @@ export function ChatInput({ onSend, onStop, isLoading, isWelcome }: ChatInputPro
     
     if (!isImage && !isPDF) return
 
-    return new Promise((resolve) => {
-      const reader = new FileReader()
-      reader.onload = () => {
-        const newAttachment: ImageAttachment = {
-          id: crypto.randomUUID(),
-          data: reader.result as string,
-          name: file.name,
-          type: file.type
-        }
-        setAttachments(prev => [...prev, newAttachment])
-        resolve()
+    if (isPDF) {
+      // Handle PDF - upload to backend for text extraction
+      const pdfId = crypto.randomUUID()
+      setPdfAttachments(prev => [...prev, { id: pdfId, name: file.name, text: '', isLoading: true }])
+      
+      try {
+        const extractedText = await chatService.uploadPdf(file)
+        setPdfAttachments(prev => 
+          prev.map(p => p.id === pdfId ? { ...p, text: extractedText, isLoading: false } : p)
+        )
+      } catch (error) {
+        console.error('Failed to extract PDF text:', error)
+        setPdfAttachments(prev => prev.filter(p => p.id !== pdfId))
+        alert('Failed to read PDF. Please try again.')
       }
-      reader.readAsDataURL(file)
-    })
+    } else {
+      // Handle images
+      return new Promise((resolve) => {
+        const reader = new FileReader()
+        reader.onload = () => {
+          const newAttachment: ImageAttachment = {
+            id: crypto.randomUUID(),
+            data: reader.result as string,
+            name: file.name,
+            type: file.type
+          }
+          setAttachments(prev => [...prev, newAttachment])
+          resolve()
+        }
+        reader.readAsDataURL(file)
+      })
+    }
   }
 
   const removeAttachment = (id: string) => {
     setAttachments(prev => prev.filter(att => att.id !== id))
   }
 
+  const removePdfAttachment = (id: string) => {
+    setPdfAttachments(prev => prev.filter(att => att.id !== id))
+  }
+
   const triggerFileInput = () => {
     fileInputRef.current?.click()
   }
 
-  const isPDF = (type: string) => type === 'application/pdf'
-
   return (
     <div className={`chat-input ${isWelcome ? 'chat-input-welcome' : ''}`}>
-      {attachments.length > 0 && (
+      {(attachments.length > 0 || pdfAttachments.length > 0) && (
         <div className="chat-input-attachments">
           {attachments.map((attachment) => (
-            <div key={attachment.id} className={`chat-input-attachment-preview ${isPDF(attachment.type) ? 'pdf' : ''}`}>
-              {isPDF(attachment.type) ? (
-                <div className="chat-input-pdf">
-                  <FileText size={24} />
-                  <span>{attachment.name}</span>
-                </div>
-              ) : (
-                <img src={attachment.data} alt={attachment.name} />
-              )}
+            <div key={attachment.id} className="chat-input-attachment-preview">
+              <img src={attachment.data} alt={attachment.name} />
               <button
                 className="chat-input-attachment-remove"
                 onClick={() => removeAttachment(attachment.id)}
                 aria-label="Remove attachment"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          ))}
+          {pdfAttachments.map((pdf) => (
+            <div key={pdf.id} className="chat-input-attachment-preview pdf">
+              <div className="chat-input-pdf">
+                {pdf.isLoading ? <Loader2 size={24} className="animate-spin" /> : <FileText size={24} />}
+                <span>{pdf.name}</span>
+              </div>
+              <button
+                className="chat-input-attachment-remove"
+                onClick={() => removePdfAttachment(pdf.id)}
+                aria-label="Remove PDF"
               >
                 <X size={14} />
               </button>
@@ -142,10 +185,23 @@ export function ChatInput({ onSend, onStop, isLoading, isWelcome }: ChatInputPro
           <Paperclip size={20} />
         </button>
         
+        {/* Reasoning Mode Toggle */}
+        <button
+          className={`chat-input-reasoning ${reasoningMode ? 'active' : ''}`}
+          onClick={onToggleReasoningMode}
+          aria-label="Reasoning Mode"
+          type="button"
+          title={reasoningMode ? "Interactive Mode: ON" : "Enable Interactive Mode"}
+        >
+          <Brain size={20} />
+        </button>
+        
         <textarea
           ref={textareaRef}
           className="chat-input-textarea"
-          placeholder={isWelcome ? "Ask me anything... (paste screenshots or attach PDFs!)" : "Type your message..."}
+          placeholder={reasoningMode 
+            ? "Interactive mode: I'll guide you step by step..." 
+            : (isWelcome ? "Ask me anything... (paste screenshots or attach PDFs!)" : "Type your message...")}
           value={message}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
@@ -167,7 +223,7 @@ export function ChatInput({ onSend, onStop, isLoading, isWelcome }: ChatInputPro
             variant="primary"
             size="md"
             onClick={handleSubmit}
-            disabled={!message.trim() && attachments.length === 0}
+            disabled={!message.trim() && attachments.length === 0 && pdfAttachments.length === 0}
             icon={<Send size={18} />}
             aria-label="Send message"
           />
@@ -184,7 +240,10 @@ export function ChatInput({ onSend, onStop, isLoading, isWelcome }: ChatInputPro
       />
 
       <p className="chat-input-hint">
-        Press Enter to send, Shift+Enter for new line. Paste screenshots or attach PDFs.
+        {reasoningMode 
+          ? "🧠 Interactive mode: step-by-step explanations with images and speech"
+          : "Press Enter to send, Shift+Enter for new line"
+        }
       </p>
     </div>
   )

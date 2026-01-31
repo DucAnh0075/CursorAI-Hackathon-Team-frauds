@@ -1,0 +1,334 @@
+.step-by-step-container {
+  padding: 1rem;
+  max-width: 100%;
+}
+
+.step-by-step-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  color: var(--color-text-secondary);
+}
+
+.step-by-step-loading .spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Problem Summary */
+.problem-summary {
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+  border-left: 4px solid var(--color-accent);
+}
+
+.problem-summary h2 {
+  margin: 0 0 0.75rem 0;
+  font-size: 1.1rem;
+  color: var(--color-text-primary);
+}
+
+.problem-summary p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+.notation-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.notation-label {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+
+.notation-tag {
+  background: var(--color-bg-tertiary);
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  font-family: monospace;
+  color: var(--color-accent);
+}
+
+/* Red Thread */
+.red-thread {
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.1) 0%, rgba(185, 28, 28, 0.05) 100%);
+  border: 1px solid rgba(220, 38, 38, 0.2);
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.red-thread h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+  color: #dc2626;
+}
+
+.red-thread p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  font-style: italic;
+}
+
+/* Steps Header */
+.steps-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.steps-header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.expand-all-btn {
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: var(--color-text-secondary);
+}
+
+.expand-all-btn:hover {
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+}
+
+/* Steps Container */
+.steps-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.step-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.step-connector {
+  display: flex;
+  justify-content: center;
+  padding: 0.5rem 0;
+  color: var(--color-accent);
+  opacity: 0.6;
+}
+
+/* Step Card */
+.step-card {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.step-card:hover {
+  border-color: var(--color-accent);
+}
+
+.step-card-expanded {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.step-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.step-number {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.step-title-area {
+  flex: 1;
+  min-width: 0;
+}
+
+.step-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.step-insight-preview {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.25rem;
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  opacity: 0.8;
+}
+
+.step-insight-preview svg {
+  color: #eab308;
+}
+
+.step-toggle {
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s;
+}
+
+.step-toggle:hover {
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+}
+
+/* Step Content */
+.step-content {
+  padding: 0 1rem 1rem 1rem;
+  border-top: 1px solid var(--color-border);
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.step-content h4 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 1rem 0 0.5rem 0;
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.step-explanation p {
+  margin: 0;
+  line-height: 1.6;
+  color: var(--color-text-primary);
+}
+
+.step-math {
+  background: var(--color-bg-tertiary);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  margin-top: 0.5rem;
+}
+
+.step-math .math-content {
+  font-size: 1rem;
+}
+
+.step-math .katex-display {
+  margin: 0.5em 0;
+}
+
+.step-image {
+  margin-top: 1rem;
+}
+
+.step-image img {
+  width: 100%;
+  max-width: 500px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  margin-top: 0.5rem;
+}
+
+.step-key-insight {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding: 1rem;
+  background: linear-gradient(135deg, rgba(234, 179, 8, 0.1) 0%, rgba(202, 138, 4, 0.05) 100%);
+  border: 1px solid rgba(234, 179, 8, 0.2);
+  border-radius: var(--radius-md);
+}
+
+.step-key-insight svg {
+  color: #eab308;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.step-key-insight strong {
+  display: block;
+  font-size: 0.85rem;
+  color: #ca8a04;
+  margin-bottom: 0.25rem;
+}
+
+.step-key-insight p {
+  margin: 0;
+  color: var(--color-text-primary);
+  line-height: 1.5;
+}
+
+/* Final Answer */
+.final-answer {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  padding: 1.25rem;
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(22, 163, 74, 0.05) 100%);
+  border: 2px solid rgba(34, 197, 94, 0.3);
+  border-radius: var(--radius-lg);
+}
+
+.final-answer svg {
+  color: #22c55e;
+  flex-shrink: 0;
+}
+
+.final-answer h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+  color: #16a34a;
+}
+
+.final-answer .answer-content {
+  color: var(--color-text-primary);
+  font-size: 1.1rem;
+}
+
+.final-answer .katex-display {
+  margin: 0.5em 0;
+}

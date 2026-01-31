@@ -24,38 +24,20 @@ class AIService:
         message: str,
         images: Optional[List[str]] = None,
         conversation_history: Optional[List[Message]] = None,
-        model: str = "openai"
+        model: str = "openai",
+        reasoning_mode: bool = False
     ) -> str:
         """
         Generate AI response with specified model
         Models: "openai" or "manus"
-        Falls back based on availability
+        reasoning_mode: enables step-by-step explanations with visual markers
         """
-        if model == "manus" and self.manus_key:
+        if self.openai_key:
             try:
-                print(f"[AI Service] Using Manus AI API")
-                return await self._manus_response(message, images, conversation_history)
-            except Exception as e:
-                print(f"[AI Service] Manus API error: {e}")
-                if self.openai_key:
-                    try:
-                        print(f"[AI Service] Falling back to OpenAI API")
-                        return await self._openai_response(message, images, conversation_history)
-                    except Exception as oe:
-                        print(f"[AI Service] OpenAI fallback error: {oe}")
-                return self._mock_response(message)
-        elif self.openai_key:
-            try:
-                print(f"[AI Service] Using OpenAI API")
-                return await self._openai_response(message, images, conversation_history)
+                print(f"[AI Service] Using OpenAI API (gpt-4o), reasoning_mode: {reasoning_mode}")
+                return await self._openai_response(message, images, conversation_history, reasoning_mode)
             except Exception as e:
                 print(f"[AI Service] OpenAI API error: {e}")
-                if self.manus_key:
-                    try:
-                        print(f"[AI Service] Falling back to Manus AI API")
-                        return await self._manus_response(message, images, conversation_history)
-                    except Exception as me:
-                        print(f"[AI Service] Manus fallback error: {me}")
                 return self._mock_response(message)
         else:
             print(f"[AI Service] No API keys available, using mock response")
@@ -169,11 +151,12 @@ class AIService:
         self,
         message: str,
         images: Optional[List[str]] = None,
-        history: Optional[List[Message]] = None
+        history: Optional[List[Message]] = None,
+        reasoning_mode: bool = False
     ) -> str:
         """Generate response using OpenAI API"""
         async with httpx.AsyncClient() as client:
-            messages = self._build_messages(message, images, history)
+            messages = self._build_messages(message, images, history, reasoning_mode)
             
             response = await client.post(
                 "https://api.openai.com/v1/chat/completions",
@@ -186,7 +169,7 @@ class AIService:
                     "messages": messages,
                     "max_tokens": 4096
                 },
-                timeout=60.0
+                timeout=120.0
             )
             
             if response.status_code == 200:
@@ -242,21 +225,70 @@ class AIService:
         self,
         message: str,
         images: Optional[List[str]] = None,
-        history: Optional[List[Message]] = None
+        history: Optional[List[Message]] = None,
+        reasoning_mode: bool = False
     ) -> List[dict]:
         """Build messages array for chat API"""
-        messages = [
-            {
-                "role": "system",
-                "content": """You are a helpful AI study assistant powered by Manus AI. 
-                Help users understand their problems, explain concepts clearly, and provide step-by-step solutions.
-                When analyzing images, describe what you see and provide relevant help.
-                Be encouraging and supportive in your teaching style.
-                
-                If a user asks for a video explanation or learning video, let them know they can request 
-                a video by saying "generate a video" or "create a learning video about [topic]"."""
-            }
-        ]
+        
+        if reasoning_mode:
+            system_content = """Du bist ein Mathe-Tutor im REASONING MODE. Du erklärst Probleme SCHRITT FÜR SCHRITT.
+
+WICHTIGE REGELN FÜR REASONING MODE:
+
+1. STRUKTUR - Teile JEDE Antwort in nummerierte Schritte:
+   
+   ## Schritt 1: [Titel]
+   [Erklärung was wir hier machen und WARUM]
+   
+   **Berechnung:**
+   \\[ mathematische Formel \\]
+   
+   💡 **Erkenntnis:** [Was haben wir gelernt?]
+   
+   ---
+   
+   ## Schritt 2: [Titel]
+   ...usw.
+
+2. VISUALISIERUNG - Beschreibe bei jedem Schritt, was man sich visuell vorstellen soll:
+   - Verwende 📍 für wichtige Punkte
+   - Verwende ➡️ für Übergänge/Ableitungen
+   - Verwende 🔴 🟢 🔵 für Markierungen
+   - Beschreibe geometrische Zusammenhänge
+
+3. NOTATION - Verwende EXAKT die gleiche Notation wie im Bild/Problem:
+   - Gleiche Variablennamen
+   - Gleiche Indizes
+   - Gleiche Symbole
+
+4. ERKLÄRUNG - Bei JEDEM Schritt:
+   - Was machen wir? (Aktion)
+   - Warum machen wir das? (Begründung)
+   - Was bedeutet das Ergebnis? (Interpretation)
+
+5. MATH FORMAT:
+   - Inline: \\( formel \\)
+   - Display/Block: \\[ formel \\]
+
+6. Am Ende:
+   ## ✅ Endergebnis
+   [Klare Zusammenfassung]
+   
+   ## 🧵 Roter Faden
+   [Wie hängen alle Schritte zusammen? Was war die Strategie?]"""
+        else:
+            system_content = """You are a helpful AI study assistant. 
+Help users understand their problems, explain concepts clearly, and provide step-by-step solutions.
+When analyzing images, describe what you see and provide relevant help.
+Be encouraging and supportive in your teaching style.
+
+IMPORTANT: When writing mathematical expressions, ALWAYS use LaTeX delimiters:
+- Use \\( ... \\) for inline math (e.g., \\(x^2 + y^2 = r^2\\))
+- Use \\[ ... \\] for display/block math equations (e.g., \\[\\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}\\])
+- NEVER use raw LaTeX without these delimiters
+- NEVER use $ or $$ delimiters"""
+        
+        messages = [{"role": "system", "content": system_content}]
         
         # Add conversation history
         if history:
@@ -267,15 +299,18 @@ class AIService:
                 })
         
         # Build current message with images
-        if images:
+        if images and len(images) > 0:
+            print(f"[AI Service] Building message with {len(images)} images")
             content = [{"type": "text", "text": message}]
-            for img in images:
+            for i, img in enumerate(images):
+                print(f"[AI Service] Adding image {i}: {img[:50]}...")
                 content.append({
                     "type": "image_url",
                     "image_url": {"url": img}
                 })
             messages.append({"role": "user", "content": content})
         else:
+            print(f"[AI Service] Building message without images")
             messages.append({"role": "user", "content": message})
         
         return messages

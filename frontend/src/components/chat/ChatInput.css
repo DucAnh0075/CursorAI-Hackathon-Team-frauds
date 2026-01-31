@@ -40,6 +40,42 @@
   background: var(--color-bg-tertiary);
 }
 
+.chat-input-reasoning {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-tertiary);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+  position: relative;
+}
+
+.chat-input-reasoning:hover {
+  color: var(--color-accent);
+  background: var(--color-bg-tertiary);
+}
+
+.chat-input-reasoning.active {
+  color: white;
+  background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.4);
+}
+
+.chat-input-reasoning.active:hover {
+  background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+}
+
+.chat-input-explain::after {
+  content: '🧵';
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  font-size: 10px;
+}
+
 .chat-input-textarea {
   flex: 1;
   min-height: 40px;

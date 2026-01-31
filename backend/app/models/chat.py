@@ -18,6 +18,7 @@ class ChatRequest(BaseModel):
     images: Optional[List[str]] = None  # Base64 encoded images
     history: Optional[List[Message]] = None
     model: Optional[str] = "openai"  # "openai" or "manus"
+    reasoning_mode: Optional[bool] = False  # Enable step-by-step reasoning
 
 
 class ChatResponse(BaseModel):
