@@ -17,6 +17,7 @@ class ChatRequest(BaseModel):
     message: str
     images: Optional[List[str]] = None  # Base64 encoded images
     history: Optional[List[Message]] = None
+    model: Optional[str] = "openai"  # "openai" or "manus"
 
 
 class ChatResponse(BaseModel):

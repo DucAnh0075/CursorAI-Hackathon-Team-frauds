@@ -154,6 +154,39 @@
   background: var(--color-accent);
 }
 
+.settings-model-toggle {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.settings-model-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  background: var(--color-bg-tertiary);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+  cursor: pointer;
+}
+
+.settings-model-btn:hover {
+  color: var(--color-text-primary);
+}
+
+.settings-model-btn.active {
+  color: var(--color-text-primary);
+  background: var(--color-accent);
+}
+
+.settings-model-info {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-tertiary);
+  margin-top: var(--spacing-sm);
+}
+
 .settings-about {
   font-size: var(--font-size-sm);
   color: var(--color-text-tertiary);

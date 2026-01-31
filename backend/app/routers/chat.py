@@ -14,20 +14,30 @@ router = APIRouter()
 @router.post("/message", response_model=ChatResponse)
 async def send_message(request: ChatRequest):
     """
-    Send a message to the AI assistant (Manus AI)
+    Send a message to the AI assistant
     Supports text and image attachments
+    Model can be specified: "openai" or "manus"
     """
     try:
+        model = request.model or "openai"
+        print(f"[API Call] Received message with model: {model}")
+        print(f"[API Call] Message: '{request.message[:50]}{'...' if len(request.message) > 50 else ''}'")
+        print(f"[API Call] Images: {len(request.images) if request.images else 0}")
+        
         response = await ai_service.generate_response(
             message=request.message,
             images=request.images,
-            conversation_history=request.history
+            conversation_history=request.history,
+            model=model
         )
+        
+        print(f"[API Response] Generated response from {model}: {response[:100]}...")
         return ChatResponse(
             message=response,
             success=True
         )
     except Exception as e:
+        print(f"[API Error] Error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

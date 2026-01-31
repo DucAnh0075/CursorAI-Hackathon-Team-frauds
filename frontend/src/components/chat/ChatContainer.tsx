@@ -43,6 +43,9 @@ export function ChatContainer({ session, onNewSession, onAddMessage }: ChatConta
       currentSession = onNewSession()
     }
 
+    // Get selected model from localStorage
+    const selectedModel = localStorage.getItem('selectedModel') || 'openai'
+
     // Create user message
     const userMessage: Message = {
       id: crypto.randomUUID(),
@@ -67,7 +70,8 @@ export function ChatContainer({ session, onNewSession, onAddMessage }: ChatConta
       const response = await chatService.sendMessage(
         content,
         images.map(img => img.data),
-        messages
+        messages,
+        selectedModel
       )
 
       // Create assistant message

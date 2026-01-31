@@ -3,13 +3,13 @@
 # Run both backend and frontend
 run:
 	@echo "Starting backend and frontend..."
-	@cd backend && . venv/bin/activate && python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 &
+	@cd backend && /home/michael/CursorAI-Hackathon-Team-frauds/.venv/bin/python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 &
 	@cd frontend && npm run dev
 
 # Run backend only (uses virtual environment)
 run-backend:
 	@echo "Starting backend server on http://localhost:8000..."
-	cd backend && . venv/bin/activate && python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+	cd backend && /home/michael/CursorAI-Hackathon-Team-frauds/.venv/bin/python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 # Run frontend only
 run-frontend:
