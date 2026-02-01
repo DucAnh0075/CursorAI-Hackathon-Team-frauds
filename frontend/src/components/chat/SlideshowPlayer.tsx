@@ -33,13 +33,33 @@ function renderMath(content: string, displayMode: boolean = false): string {
   }
 }
 
+// Render text with math as HTML string (for dangerouslySetInnerHTML)
+function renderTextWithMath(text: string): string {
+  if (!text) return ''
+  
+  // Replace $$...$$ and $...$ with rendered KaTeX
+  return text.replace(/\$\$([^$]+)\$\$|\$([^$]+)\$/g, (_match, display, inline) => {
+    const latex = display || inline
+    const isDisplay = display !== undefined
+    try {
+      return katex.renderToString(latex, {
+        displayMode: isDisplay,
+        throwOnError: false,
+        trust: true,
+        strict: false
+      })
+    } catch (e) {
+      return `<span class="latex-error">${latex}</span>`
+    }
+  })
+}
+
 // Render a line that may contain LaTeX math wrapped in $...$ or $$...$$
 function renderLineWithLatex(text: string): React.ReactNode {
   if (!text) return null
   
   // Split by LaTeX delimiters: $$...$$ (display) or $...$ (inline)
   const parts: React.ReactNode[] = []
-  let remaining = text
   let key = 0
   
   // Pattern to match $$...$$ or $...$

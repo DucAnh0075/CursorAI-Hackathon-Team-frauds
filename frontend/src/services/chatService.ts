@@ -95,7 +95,7 @@ export interface FlashcardSet {
 
 // Slideshow types
 export interface Slide {
-  type: 'title' | 'objectives' | 'problem' | 'step' | 'answer' | 'summary'
+  type: 'title' | 'objectives' | 'problem' | 'step' | 'answer' | 'summary' | 'blackboard' | 'foundation' | 'concept' | 'warning' | 'checkpoint' | 'encouragement'
   title: string
   subtitle?: string
   content?: string
@@ -111,6 +111,14 @@ export interface Slide {
   background: string
   audio?: string
   has_audio: boolean
+  // Additional properties for various slide types
+  lines?: string[]
+  concept_name?: string
+  key_insight?: string
+  what_we_do?: string
+  why_it_matters?: string
+  pro_tip?: string
+  pattern?: string
 }
 
 export interface SlideshowComposition {
