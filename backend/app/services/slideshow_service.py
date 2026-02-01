@@ -223,19 +223,17 @@ GENERATE 10-12 boards, 2-4 lines each, 40-60 words per voice.'''
                             "model": "speech-02-hd",
                             "text": text,
                             "voice_setting": {
-                                "voice_id": "female-shaonv",  # Mature, seductive female voice
-                                "speed": 0.85,  # Slower for more sensual delivery
+                                "voice_id": "female-yujie",  # Mature, elegant female voice
+                                "speed": 0.9,
                                 "vol": 1.0,
-                                "pitch": -1,  # Lower pitch for mature sound
-                                "emotion": "tender"  # Tender/intimate emotion
+                                "pitch": 0
                             },
                             "audio_setting": {
                                 "sample_rate": 32000,
                                 "bitrate": 128000,
                                 "format": "mp3",
                                 "channel": 1
-                            },
-                            "language_boost": "English"
+                            }
                         },
                         timeout=60.0
                     )
