@@ -33,25 +33,28 @@ function renderMath(content: string, displayMode: boolean = false): string {
   }
 }
 
-// Render text with inline math - handles $...$ and plain text
-function renderTextWithMath(content: string): string {
-  if (!content) return ''
+// Format math notation for display
+function formatMath(text: string): string {
+  if (!text) return ''
   
-  let result = content
+  let result = text
   
-  // First, handle explicit $...$ math delimiters
-  result = result.replace(/\$([^$]+)\$/g, (_, math) => {
-    try {
-      return katex.renderToString(math.trim(), { 
-        displayMode: false, 
-        throwOnError: false,
-        trust: true,
-        strict: false
-      })
-    } catch {
-      return `<code>${math}</code>`
+  // Convert log_b(x) to log with subscript: log_3(10) → log₃(10)
+  result = result.replace(/log_([0-9a-z])\(/g, (_, sub) => {
+    const subscripts: Record<string, string> = {
+      '0': '₀', '1': '₁', '2': '₂', '3': '₃', '4': '₄',
+      '5': '₅', '6': '₆', '7': '₇', '8': '₈', '9': '₉',
+      'a': 'ₐ', 'b': 'ᵦ', 'n': 'ₙ'
     }
+    return `log${subscripts[sub] || sub}(`
   })
+  
+  // Convert n^2, n^3 to superscript
+  result = result.replace(/\^2(?![0-9.])/g, '²')
+  result = result.replace(/\^3(?![0-9.])/g, '³')
+  
+  // Keep n^(something) as is but style it nicely
+  // n^(log_3(10)) stays readable
   
   return result
 }
@@ -190,15 +193,16 @@ export const SlideshowPlayer: React.FC<Props> = ({ slideshow, onClose }) => {
       case 'blackboard':
         return (
           <div className="slide-blackboard-content">
-            <h2 className="blackboard-title">{slide.title}</h2>
+            <h2 className="blackboard-title">{slide.title || ''}</h2>
             <div className="blackboard-lines">
               {slide.lines?.map((line: string, i: number) => (
                 <div 
                   key={i} 
                   className="blackboard-line"
                   style={{ animationDelay: `${i * 0.4}s` }}
-                  dangerouslySetInnerHTML={{ __html: renderTextWithMath(line) }}
-                />
+                >
+                  {formatMath(line)}
+                </div>
               ))}
             </div>
           </div>
