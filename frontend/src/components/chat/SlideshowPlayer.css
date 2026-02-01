@@ -152,6 +152,32 @@
   opacity: 0;
 }
 
+/* LaTeX styling */
+.blackboard-line .latex-inline,
+.blackboard-line .latex-display {
+  display: inline-block;
+}
+
+.blackboard-line .latex-display {
+  display: block;
+  text-align: center;
+  margin: 10px 0;
+}
+
+.blackboard-line .katex {
+  font-size: 1.3em;
+  color: #ffffff;
+}
+
+.blackboard-line .katex-display {
+  margin: 0;
+}
+
+.latex-error {
+  color: #ff6b6b;
+  font-family: monospace;
+}
+
 @keyframes writeIn {
   from {
     opacity: 0;

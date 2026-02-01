@@ -33,30 +33,57 @@ function renderMath(content: string, displayMode: boolean = false): string {
   }
 }
 
-// Format math notation for display
-function formatMath(text: string): string {
-  if (!text) return ''
+// Render a line that may contain LaTeX math wrapped in $...$ or $$...$$
+function renderLineWithLatex(text: string): React.ReactNode {
+  if (!text) return null
   
-  let result = text
+  // Split by LaTeX delimiters: $$...$$ (display) or $...$ (inline)
+  const parts: React.ReactNode[] = []
+  let remaining = text
+  let key = 0
   
-  // Convert log_b(x) to log with subscript: log_3(10) → log₃(10)
-  result = result.replace(/log_([0-9a-z])\(/g, (_, sub) => {
-    const subscripts: Record<string, string> = {
-      '0': '₀', '1': '₁', '2': '₂', '3': '₃', '4': '₄',
-      '5': '₅', '6': '₆', '7': '₇', '8': '₈', '9': '₉',
-      'a': 'ₐ', 'b': 'ᵦ', 'n': 'ₙ'
+  // Pattern to match $$...$$ or $...$
+  const mathRegex = /\$\$([^$]+)\$\$|\$([^$]+)\$/g
+  let lastIndex = 0
+  let match
+  
+  while ((match = mathRegex.exec(text)) !== null) {
+    // Add text before the match
+    if (match.index > lastIndex) {
+      parts.push(<span key={key++}>{text.slice(lastIndex, match.index)}</span>)
     }
-    return `log${subscripts[sub] || sub}(`
-  })
+    
+    const isDisplay = match[1] !== undefined
+    const latex = match[1] || match[2]
+    
+    try {
+      const html = katex.renderToString(latex, {
+        displayMode: isDisplay,
+        throwOnError: false,
+        trust: true,
+        strict: false
+      })
+      parts.push(
+        <span 
+          key={key++} 
+          className={isDisplay ? 'latex-display' : 'latex-inline'}
+          dangerouslySetInnerHTML={{ __html: html }}
+        />
+      )
+    } catch (e) {
+      // Fallback: show the latex code
+      parts.push(<span key={key++} className="latex-error">{latex}</span>)
+    }
+    
+    lastIndex = match.index + match[0].length
+  }
   
-  // Convert n^2, n^3 to superscript
-  result = result.replace(/\^2(?![0-9.])/g, '²')
-  result = result.replace(/\^3(?![0-9.])/g, '³')
+  // Add remaining text
+  if (lastIndex < text.length) {
+    parts.push(<span key={key++}>{text.slice(lastIndex)}</span>)
+  }
   
-  // Keep n^(something) as is but style it nicely
-  // n^(log_3(10)) stays readable
-  
-  return result
+  return parts.length > 0 ? <>{parts}</> : text
 }
 
 export const SlideshowPlayer: React.FC<Props> = ({ slideshow, onClose }) => {
@@ -201,7 +228,7 @@ export const SlideshowPlayer: React.FC<Props> = ({ slideshow, onClose }) => {
                   className="blackboard-line"
                   style={{ animationDelay: `${i * 0.4}s` }}
                 >
-                  {formatMath(line)}
+                  {renderLineWithLatex(line)}
                 </div>
               ))}
             </div>

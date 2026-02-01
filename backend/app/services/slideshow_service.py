@@ -72,38 +72,47 @@ Return this JSON:
         {
             "title": "Welcome",
             "lines": ["Topic: Master Theorem", "Goal: Find asymptotic bound"],
-            "voice": "Hey there! Today we are going to solve this recurrence relation together."
+            "voice": "Hey there! Today we are going to solve this problem together."
         },
         {
             "title": "The Problem", 
-            "lines": ["T(n) = 10·T(n/3) + n²", "Find: Θ(?)"],
-            "voice": "Here is our problem. T of n equals 10 times T of n over 3, plus n squared."
+            "lines": ["Matrix A:", "| -1   2 |", "|  2  -4 |", "Solve: u' = Au"],
+            "voice": "Here is our matrix A. We need to solve u prime equals A times u."
         }
     ]
 }
 
-MATH NOTATION - Use these EXACT formats:
-- Subscripts with underscore: log_3(10), log_b(a)
-- Superscripts: n², n³, or n^2.1 for decimals
-- Theta: Θ(n²)
-- Multiply: · (middle dot)
-- Epsilon: ε
-- Comparison: <, >, ≤, ≥, ≈
+MATH NOTATION - USE LATEX:
 
-EXAMPLE LINES:
-- "T(n) = 10·T(n/3) + n²"
-- "a = 10, b = 3, f(n) = n²"
-- "Calculate: log_3(10) ≈ 2.1"
-- "Compare: n² vs n^(log_3(10))"
-- "Since n² < n^2.1, Case 1 applies"
-- "Result: T(n) = Θ(n^(log_3(10)))"
+Wrap ALL math in $...$ for inline or $$...$$ for display.
 
-VOICE - Natural speech:
-- "log base 3 of 10"
-- "n squared", "n to the 2.1"
-- "Theta of n to the log base 3 of 10"
+EXAMPLES:
+- Matrix: "$A = \\begin{pmatrix} -1 & 2 \\\\ 2 & -4 \\end{pmatrix}$"
+- Equation: "$u' = Au$"
+- Eigenvalues: "$\\lambda_1 = 0, \\lambda_2 = -5$"
+- Determinant: "$\\det(A) = (-1)(-4) - (2)(2) = 0$"
+- Characteristic: "$\\lambda^2 + 5\\lambda = 0$"
+- Vector: "$v = \\begin{pmatrix} 2 \\\\ 1 \\end{pmatrix}$"
+- Fraction: "$\\frac{a}{b}$"
+- Square root: "$\\sqrt{x}$"
+- Greek: $\\lambda$, $\\theta$, $\\alpha$, $\\beta$
+- Subscripts: $x_1$, $\\log_3(10)$
+- Superscripts: $n^2$, $e^{\\lambda t}$
+- Big-O: "$\\Theta(n^{\\log_3 10})$"
 
-GENERATE 10-12 boards, 2-3 lines each, 40-60 words per voice.'''
+IMPORTANT:
+- Every math expression MUST be wrapped in $ signs
+- Use \\begin{pmatrix}...\\end{pmatrix} for matrices
+- Use \\\\ for newlines in matrices
+- Use & to separate columns
+
+VOICE - speak math naturally:
+- "negative 1" not "-1"
+- "2 by 2 matrix"
+- "lambda equals"
+- "the determinant is"
+
+GENERATE 10-12 boards, 2-4 lines each, 40-60 words per voice.'''
 
         messages = [{"role": "system", "content": prompt}]
         
