@@ -32,6 +32,20 @@ class AIService:
         Models: "openai" or "manus"
         reasoning_mode: enables step-by-step explanations with visual markers
         """
+        # Use Manus AI if selected and key is available
+        if model == "manus" and self.manus_key:
+            try:
+                print(f"[AI Service] Using Manus AI API, reasoning_mode: {reasoning_mode}")
+                return await self._manus_response(message, images, conversation_history, reasoning_mode)
+            except Exception as e:
+                print(f"[AI Service] Manus AI API error: {e}")
+                # Fall back to OpenAI
+                if self.openai_key:
+                    print(f"[AI Service] Falling back to OpenAI")
+                    return await self._openai_response(message, images, conversation_history, reasoning_mode)
+                return self._mock_response(message)
+        
+        # Use OpenAI if selected (or as default)
         if self.openai_key:
             try:
                 print(f"[AI Service] Using OpenAI API (gpt-4o), reasoning_mode: {reasoning_mode}")
@@ -65,17 +79,19 @@ class AIService:
         self,
         message: str,
         images: Optional[List[str]] = None,
-        history: Optional[List[Message]] = None
+        history: Optional[List[Message]] = None,
+        reasoning_mode: bool = False
     ) -> str:
-        """Generate response using Manus AI API"""
+        """Generate response using Manus AI API (OpenAI SDK compatible)"""
         try:
             async with httpx.AsyncClient() as client:
-                messages = self._build_messages(message, images, history)
+                messages = self._build_messages(message, images, history, reasoning_mode)
                 
                 response = await client.post(
                     f"{self.manus_base_url}/chat/completions",
                     headers={
-                        "Authorization": f"Bearer {self.manus_key}",
+                        "API_KEY": self.manus_key,
+                        "Authorization": f"Bearer placeholder",
                         "Content-Type": "application/json"
                     },
                     json={

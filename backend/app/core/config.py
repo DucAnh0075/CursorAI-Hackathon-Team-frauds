@@ -16,9 +16,9 @@ class Settings(BaseSettings):
     MANUS_API_KEY: str = ""
     HUME_API_KEY: str = ""
     
-    # Manus AI Settings
-    MANUS_API_BASE_URL: str = "https://api.manus.ai/v1"
-    MANUS_MODEL: str = "manus-1"
+    # Manus AI Settings (OpenAI SDK compatible endpoint)
+    MANUS_API_BASE_URL: str = "https://api.manus.im"
+    MANUS_MODEL: str = "manus-1.6"
     
     # MiniMax Video Settings
     MINIMAX_API_BASE_URL: str = "https://api.minimax.chat/v1"
