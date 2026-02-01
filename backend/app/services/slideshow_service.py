@@ -71,46 +71,44 @@ Return this JSON:
     "boards": [
         {
             "title": "Welcome",
-            "lines": ["Topic: Master Theorem", "Goal: Find asymptotic bound"],
+            "lines": ["Topic: Master Theorem", "Goal: Find $\\\\Theta$ bound"],
             "voice": "Hey there! Today we are going to solve this problem together."
         },
         {
             "title": "The Problem", 
-            "lines": ["Matrix A:", "| -1   2 |", "|  2  -4 |", "Solve: u' = Au"],
+            "lines": ["$A = \\\\begin{pmatrix} -1 & 2 \\\\\\\\ 2 & -4 \\\\end{pmatrix}$", "Solve: $u' = Au$"],
             "voice": "Here is our matrix A. We need to solve u prime equals A times u."
+        },
+        {
+            "title": "Comparison",
+            "lines": ["$n^2$ vs $n^{\\\\log_3 10}$", "Since $3^2 = 9 < 10$", "$\\\\log_3(10) > 2$"],
+            "voice": "Let's compare n squared with n to the log base 3 of 10."
         }
     ]
 }
 
-MATH NOTATION - USE LATEX:
+CRITICAL - ALL MATH MUST USE LATEX WITH DOLLAR SIGNS:
 
-Wrap ALL math in $...$ for inline or $$...$$ for display.
+EVERY mathematical expression must be wrapped in $...$ signs. No exceptions!
 
-EXAMPLES:
-- Matrix: "$A = \\begin{pmatrix} -1 & 2 \\\\ 2 & -4 \\end{pmatrix}$"
-- Equation: "$u' = Au$"
-- Eigenvalues: "$\\lambda_1 = 0, \\lambda_2 = -5$"
-- Determinant: "$\\det(A) = (-1)(-4) - (2)(2) = 0$"
-- Characteristic: "$\\lambda^2 + 5\\lambda = 0$"
-- Vector: "$v = \\begin{pmatrix} 2 \\\\ 1 \\end{pmatrix}$"
-- Fraction: "$\\frac{a}{b}$"
-- Square root: "$\\sqrt{x}$"
-- Greek: $\\lambda$, $\\theta$, $\\alpha$, $\\beta$
-- Subscripts: $x_1$, $\\log_3(10)$
-- Superscripts: $n^2$, $e^{\\lambda t}$
-- Big-O: "$\\Theta(n^{\\log_3 10})$"
+CORRECT examples:
+- "$n^2$" NOT "n^2"
+- "$\\\\log_3(10)$" NOT "log_3(10)"  
+- "$\\\\lambda_1 = 0$" NOT "λ_1 = 0"
+- "$A = \\\\begin{pmatrix} a & b \\\\\\\\ c & d \\\\end{pmatrix}$"
+- "$\\\\Theta(n^{\\\\log_b a})$"
+- "$\\\\frac{a}{b}$"
+- "$\\\\sqrt{x}$"
+- "$e^{\\\\lambda t}$"
 
-IMPORTANT:
-- Every math expression MUST be wrapped in $ signs
-- Use \\begin{pmatrix}...\\end{pmatrix} for matrices
-- Use \\\\ for newlines in matrices
-- Use & to separate columns
+WRONG - DO NOT OUTPUT:
+- n^2, n^log_3(10), log_3(10) > 2 (missing $ signs!)
+- λ, Θ (use $\\\\lambda$, $\\\\Theta$ instead)
 
 VOICE - speak math naturally:
-- "negative 1" not "-1"
-- "2 by 2 matrix"
+- "n squared" not "n^2"
+- "log base 3 of 10"
 - "lambda equals"
-- "the determinant is"
 
 GENERATE 10-12 boards, 2-4 lines each, 40-60 words per voice.'''
 
