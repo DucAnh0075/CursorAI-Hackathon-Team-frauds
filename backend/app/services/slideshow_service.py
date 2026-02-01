@@ -223,8 +223,8 @@ GENERATE 10-12 boards, 2-4 lines each, 40-60 words per voice.'''
                             "model": "speech-02-hd",
                             "text": text,
                             "voice_setting": {
-                                "voice_id": "female-yujie",  # Mature, elegant female voice
-                                "speed": 0.9,
+                                "voice_id": "male-qn-qingse",  # Calm, clear male voice like The Organic Chemistry Tutor
+                                "speed": 0.95,  # Slightly slower for clarity
                                 "vol": 1.0,
                                 "pitch": 0
                             },
@@ -241,27 +241,13 @@ GENERATE 10-12 boards, 2-4 lines each, 40-60 words per voice.'''
                     print(f"[Slideshow] MiniMax TTS: {response.status_code}")
                     if response.status_code == 200:
                         data = response.json()
-                        print(f"[Slideshow] MiniMax response keys: {data.keys()}")
-                        
-                        # Try different response formats
-                        audio_hex = data.get('data', {}).get('audio', '') or data.get('audio', '')
-                        audio_file = data.get('data', {}).get('audio_file', {})
-                        
+                        audio_hex = data.get('data', {}).get('audio', '')
                         if audio_hex:
                             audio_bytes = bytes.fromhex(audio_hex)
                             audio = base64.b64encode(audio_bytes).decode()
                             return f"data:audio/mp3;base64,{audio}"
-                        elif audio_file and audio_file.get('audio_url'):
-                            # If MiniMax returns a URL instead of hex data
-                            audio_url = audio_file.get('audio_url')
-                            print(f"[Slideshow] MiniMax returned audio URL: {audio_url[:50]}...")
-                            async with httpx.AsyncClient() as dl_client:
-                                audio_response = await dl_client.get(audio_url, timeout=30.0)
-                                if audio_response.status_code == 200:
-                                    audio = base64.b64encode(audio_response.content).decode()
-                                    return f"data:audio/mp3;base64,{audio}"
                         else:
-                            print(f"[Slideshow] MiniMax: No audio in response. Full response: {str(data)[:500]}")
+                            print(f"[Slideshow] MiniMax: No audio in response")
                     elif response.status_code == 429:
                         print(f"[Slideshow] MiniMax rate limited, falling back to OpenAI")
                     else:
