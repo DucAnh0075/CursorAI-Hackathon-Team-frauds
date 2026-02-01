@@ -14,10 +14,28 @@ export interface ImageAttachment {
   type: string
 }
 
+export interface Flashcard {
+  id: number
+  front: string
+  back: string
+  hint?: string
+  difficulty: 'easy' | 'medium' | 'hard'
+}
+
+export interface FlashcardSet {
+  id: string
+  topic_title: string
+  description: string
+  cards: Flashcard[]
+  study_tips: string
+  createdAt: Date
+}
+
 export interface ChatSession {
   id: string
   title: string
   messages: Message[]
+  flashcardSets?: FlashcardSet[]
   createdAt: Date
   updatedAt: Date
 }

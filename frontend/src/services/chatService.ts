@@ -53,6 +53,109 @@ export interface ReasoningAnalysis {
   final_answer: string
 }
 
+// Flashcard types
+export interface Flashcard {
+  id: number
+  front: string
+  back: string
+  hint?: string
+  difficulty: 'easy' | 'medium' | 'hard'
+}
+
+export interface FlashcardSet {
+  id: string
+  topic_title: string
+  description: string
+  cards: Flashcard[]
+  study_tips: string
+  createdAt: Date
+}
+
+// Slideshow types
+export interface Slide {
+  type: 'title' | 'objectives' | 'problem' | 'step' | 'answer' | 'summary'
+  title: string
+  subtitle?: string
+  content?: string
+  explanation?: string
+  math?: string
+  key_point?: string
+  visual_description?: string
+  bullets?: string[]
+  answer?: string
+  step_number?: number
+  speaker_notes: string
+  duration: number
+  background: string
+  audio?: string
+  has_audio: boolean
+}
+
+export interface SlideshowComposition {
+  id: string
+  fps: number
+  width: number
+  height: number
+  durationInFrames: number
+  defaultProps: {
+    title: string
+    slides: Slide[]
+    theme: {
+      primaryColor: string
+      secondaryColor: string
+      backgroundColor: string
+      textColor: string
+      accentColor: string
+      fontFamily: string
+    }
+    transitions: {
+      type: string
+      duration: number
+    }
+    animations: {
+      textEntrance: string
+      mathEntrance: string
+      bulletEntrance: string
+    }
+  }
+}
+
+export interface SlideshowData {
+  success: boolean
+  slideshow_id: string
+  title: string
+  slides: Slide[]
+  composition: SlideshowComposition
+  total_slides: number
+  estimated_duration: number
+  error?: string
+  message?: string
+}
+
+// Gambling Mode types
+export interface GamblingScenario {
+  outcome: string
+  probability: string
+  result: string
+  larry_comment: string
+}
+
+export interface GamblingAnalysis {
+  lucky_larry_says: string
+  the_scenario: string
+  probability_analysis: {
+    win_probability: string
+    lose_probability: string
+    expected_value: string
+    house_edge: string
+  }
+  gambler_pros: string[]
+  reality_cons: string[]
+  scenarios: GamblingScenario[]
+  the_truth: string
+  gambling_helpline: string
+}
+
 export const chatService = {
   async sendMessage(
     message: string,
@@ -110,6 +213,27 @@ export const chatService = {
     })
 
     return response.data.data  // Returns extracted text
+  },
+
+  // Gambling Mode API
+  async analyzeGamblingScenario(
+    scenario: string,
+    image?: string,
+    conversationHistory?: Array<{ role: string; content: string }>
+  ): Promise<GamblingAnalysis> {
+    try {
+      console.log('[Gambling API] Analyzing scenario...')
+      const response = await api.post<GamblingAnalysis>(
+        '/gambling/analyze',
+        { scenario, image, conversation_history: conversationHistory },
+        { timeout: 60000 }
+      )
+      console.log('[Gambling API] Received analysis')
+      return response.data
+    } catch (error) {
+      console.error('Gambling API error:', error)
+      throw error
+    }
   },
 
   // Video Generation APIs
@@ -257,6 +381,49 @@ export const chatService = {
       return response.data
     } catch (error) {
       console.error('Quick explanation API error:', error)
+      throw error
+    }
+  },
+
+  // Flashcard Generation API
+  async generateFlashcards(
+    topic: string,
+    context?: string,
+    image?: string,
+    numCards: number = 5
+  ): Promise<Omit<FlashcardSet, 'id' | 'createdAt'>> {
+    try {
+      console.log('[Flashcard API] Generating flashcards...')
+      const response = await api.post<Omit<FlashcardSet, 'id' | 'createdAt'>>(
+        '/flashcards/generate',
+        { topic, context, image, num_cards: numCards },
+        { timeout: 60000 }
+      )
+      console.log('[Flashcard API] Generated', response.data.cards.length, 'cards')
+      return response.data
+    } catch (error) {
+      console.error('Flashcard API error:', error)
+      throw error
+    }
+  },
+
+  // Slideshow Generation API
+  async generateSlideshow(
+    problem: string,
+    image?: string,
+    reasoningAnalysis?: ReasoningAnalysis
+  ): Promise<SlideshowData> {
+    try {
+      console.log('[Slideshow API] Generating slideshow...')
+      const response = await api.post<SlideshowData>(
+        '/slideshow/generate',
+        { problem, image, reasoning_analysis: reasoningAnalysis },
+        { timeout: 120000 }
+      )
+      console.log('[Slideshow API] Generated', response.data.total_slides, 'slides')
+      return response.data
+    } catch (error) {
+      console.error('Slideshow API error:', error)
       throw error
     }
   },

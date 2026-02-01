@@ -9,6 +9,7 @@ function AppContent() {
     activeSessionId,
     setActiveSessionId,
     createSession,
+    updateSession,
     addMessage,
     deleteSession,
     getActiveSession
@@ -43,6 +44,11 @@ function AppContent() {
         onAddMessage={(message) => {
           if (activeSessionId) {
             addMessage(activeSessionId, message)
+          }
+        }}
+        onUpdateSession={(updates) => {
+          if (activeSessionId) {
+            updateSession(activeSessionId, updates)
           }
         }}
       />

@@ -68,6 +68,57 @@
   background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
 }
 
+/* Gambling Mode Button */
+.chat-input-gambling {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-tertiary);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+  position: relative;
+}
+
+.chat-input-gambling:hover {
+  color: #ffd700;
+  background: var(--color-bg-tertiary);
+}
+
+.chat-input-gambling.active {
+  color: white;
+  background: linear-gradient(135deg, #e94560 0%, #c62a42 100%);
+  box-shadow: 0 2px 8px rgba(233, 69, 96, 0.4);
+}
+
+.chat-input-gambling.active:hover {
+  background: linear-gradient(135deg, #d63850 0%, #b52339 100%);
+}
+
+/* Flashcards Button */
+.chat-input-flashcards {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #a78bfa;
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+  position: relative;
+  background: rgba(167, 139, 250, 0.1);
+  border: 1px solid rgba(167, 139, 250, 0.3);
+}
+
+.chat-input-flashcards:hover {
+  background: rgba(167, 139, 250, 0.2);
+  color: #c4b5fd;
+  transform: scale(1.05);
+}
+
 .chat-input-explain::after {
   content: '🧵';
   position: absolute;
