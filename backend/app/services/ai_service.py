@@ -87,11 +87,11 @@ class AIService:
             async with httpx.AsyncClient() as client:
                 messages = self._build_messages(message, images, history, reasoning_mode)
                 
+                # Manus uses OpenAI-compatible endpoint at /v1/chat/completions
                 response = await client.post(
-                    f"{self.manus_base_url}/chat/completions",
+                    f"{self.manus_base_url}/v1/chat/completions",
                     headers={
-                        "API_KEY": self.manus_key,
-                        "Authorization": f"Bearer placeholder",
+                        "Authorization": f"Bearer {self.manus_key}",
                         "Content-Type": "application/json"
                     },
                     json={
