@@ -25,8 +25,14 @@ class Settings(BaseSettings):
     MINIMAX_VIDEO_MODEL: str = "video-01"
     MINIMAX_GROUP_ID: str = ""
     
-    # CORS
-    CORS_ORIGINS: List[str] = ["http://localhost:5173", "http://localhost:5174", "http://localhost:3000"]
+    # CORS - allow Vercel deployments
+    CORS_ORIGINS: List[str] = [
+        "http://localhost:5173", 
+        "http://localhost:5174", 
+        "http://localhost:3000",
+        "https://*.vercel.app",
+        "https://ai-study-assistant.vercel.app"
+    ]
     
     # Upload settings
     MAX_UPLOAD_SIZE: int = 10 * 1024 * 1024  # 10MB

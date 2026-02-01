@@ -15,10 +15,14 @@ app = FastAPI(
     description="AI-powered study assistant API with Manus AI chat and MiniMax video generation"
 )
 
-# CORS middleware
+# CORS middleware - allow all origins in production for Vercel
+import os
+cors_origins = settings.CORS_ORIGINS if settings.DEBUG else ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
+    allow_origins=cors_origins,
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

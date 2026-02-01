@@ -19,6 +19,8 @@ class SlideshowService:
     def __init__(self):
         self.openai_key = settings.OPENAI_API_KEY
         self.hume_key = settings.HUME_API_KEY
+        self.minimax_key = settings.MINIMAX_API_KEY
+        self.minimax_api_host = "https://api.minimax.io"  # Global API
         self.output_dir = os.path.join(settings.VIDEO_OUTPUT_DIR, "slideshows")
         os.makedirs(self.output_dir, exist_ok=True)
     
@@ -202,37 +204,60 @@ GENERATE 10-12 boards, 2-4 lines each, 40-60 words per voice.'''
         return result
     
     async def _generate_voice(self, text: str) -> Optional[str]:
-        """Generate voice narration using Hume AI with OpenAI fallback"""
+        """Generate voice narration using MiniMax API with OpenAI fallback"""
         if not text.strip():
             return None
         
-        # Try Hume AI first
-        if self.hume_key:
+        # Try MiniMax first
+        if self.minimax_key:
+            print(f"[Slideshow] Trying MiniMax TTS...")
             try:
                 async with httpx.AsyncClient() as client:
                     response = await client.post(
-                        "https://api.hume.ai/v0/tts/file",
-                        headers={"X-Hume-Api-Key": self.hume_key, "Content-Type": "application/json"},
+                        f"{self.minimax_api_host}/v1/t2a_v2",
+                        headers={
+                            "Authorization": f"Bearer {self.minimax_key}",
+                            "Content-Type": "application/json"
+                        },
                         json={
-                            "utterances": [{
-                                "text": text,
-                                "description": "A friendly, warm female teacher explaining math. Speak clearly and enthusiastically, like you're excited to help a student understand."
-                            }],
-                            "format": {"type": "mp3"}
+                            "model": "speech-02-hd",
+                            "text": text,
+                            "voice_setting": {
+                                "voice_id": "Charming_Lady",
+                                "speed": 0.9,
+                                "vol": 1.0,
+                                "pitch": 2,
+                                "emotion": "happy"
+                            },
+                            "audio_setting": {
+                                "sample_rate": 32000,
+                                "bitrate": 128000,
+                                "format": "mp3",
+                                "channel": 1
+                            },
+                            "language_boost": "English"
                         },
                         timeout=60.0
                     )
                     
-                    print(f"[Slideshow] Hume AI: {response.status_code}")
+                    print(f"[Slideshow] MiniMax TTS: {response.status_code}")
                     if response.status_code == 200:
-                        audio = base64.b64encode(response.content).decode()
-                        return f"data:audio/mp3;base64,{audio}"
+                        data = response.json()
+                        audio_hex = data.get('data', {}).get('audio', '')
+                        if audio_hex:
+                            audio_bytes = bytes.fromhex(audio_hex)
+                            audio = base64.b64encode(audio_bytes).decode()
+                            return f"data:audio/mp3;base64,{audio}"
+                        else:
+                            print(f"[Slideshow] MiniMax: No audio in response")
                     elif response.status_code == 429:
-                        print(f"[Slideshow] Hume rate limited, falling back to OpenAI")
+                        print(f"[Slideshow] MiniMax rate limited, falling back to OpenAI")
                     else:
-                        print(f"[Slideshow] Hume error: {response.text[:100]}")
+                        print(f"[Slideshow] MiniMax error: {response.text[:200]}")
             except Exception as e:
-                print(f"[Slideshow] Hume failed: {e}")
+                print(f"[Slideshow] MiniMax failed: {e}")
+        else:
+            print(f"[Slideshow] No MiniMax API key, using OpenAI")
         
         # Fallback to OpenAI TTS
         if self.openai_key:
