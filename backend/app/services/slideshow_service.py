@@ -195,11 +195,11 @@ GENERATE 10-12 boards, 2-3 lines each, 40-60 words per voice.'''
         return result
     
     async def _generate_voice(self, text: str) -> Optional[str]:
-        """Generate voice narration using Hume AI"""
+        """Generate voice narration using Hume AI with OpenAI fallback"""
         if not text.strip():
             return None
         
-        # Use Hume AI for expressive voice
+        # Try Hume AI first
         if self.hume_key:
             try:
                 async with httpx.AsyncClient() as client:
@@ -220,10 +220,35 @@ GENERATE 10-12 boards, 2-3 lines each, 40-60 words per voice.'''
                     if response.status_code == 200:
                         audio = base64.b64encode(response.content).decode()
                         return f"data:audio/mp3;base64,{audio}"
+                    elif response.status_code == 429:
+                        print(f"[Slideshow] Hume rate limited, falling back to OpenAI")
                     else:
                         print(f"[Slideshow] Hume error: {response.text[:100]}")
             except Exception as e:
                 print(f"[Slideshow] Hume failed: {e}")
+        
+        # Fallback to OpenAI TTS
+        if self.openai_key:
+            try:
+                async with httpx.AsyncClient() as client:
+                    response = await client.post(
+                        "https://api.openai.com/v1/audio/speech",
+                        headers={"Authorization": f"Bearer {self.openai_key}", "Content-Type": "application/json"},
+                        json={
+                            "model": "tts-1-hd",
+                            "input": text,
+                            "voice": "shimmer",
+                            "speed": 0.95
+                        },
+                        timeout=60.0
+                    )
+                    
+                    if response.status_code == 200:
+                        print(f"[Slideshow] OpenAI TTS fallback: 200")
+                        audio = base64.b64encode(response.content).decode()
+                        return f"data:audio/mp3;base64,{audio}"
+            except Exception as e:
+                print(f"[Slideshow] OpenAI TTS also failed: {e}")
         
         return None
 
