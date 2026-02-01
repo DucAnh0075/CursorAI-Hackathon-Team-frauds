@@ -1,11 +1,33 @@
 import axios from 'axios'
 import { ChatResponse, Message } from '@/types/chat'
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api'
+
+// Get access code from localStorage or URL param
+const getAccessCode = () => {
+  const urlParams = new URLSearchParams(window.location.search)
+  const urlCode = urlParams.get('code')
+  if (urlCode) {
+    localStorage.setItem('access_code', urlCode)
+    return urlCode
+  }
+  return localStorage.getItem('access_code') || ''
+}
+
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
+})
+
+// Add access code to all requests
+api.interceptors.request.use((config) => {
+  const accessCode = getAccessCode()
+  if (accessCode) {
+    config.headers['X-Access-Code'] = accessCode
+  }
+  return config
 })
 
 export interface VideoGenerationResponse {
