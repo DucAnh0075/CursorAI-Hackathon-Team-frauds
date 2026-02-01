@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, KeyboardEvent, ChangeEvent, ClipboardEvent } from 'react'
-import { Send, X, Paperclip, FileText, Square, Loader2, Brain } from 'lucide-react'
+import { Send, X, Paperclip, FileText, Square, Loader2, Brain, Dices, BookOpen } from 'lucide-react'
 import { Button } from '@components/ui/Button'
 import { ImageAttachment } from '@/types/chat'
 import { chatService } from '@/services/chatService'
@@ -12,6 +12,10 @@ interface ChatInputProps {
   isWelcome?: boolean
   reasoningMode: boolean
   onToggleReasoningMode: () => void
+  gamblingMode: boolean
+  onToggleGamblingMode: () => void
+  hasFlashcards?: boolean
+  onShowFlashcards?: () => void
 }
 
 interface PdfAttachment {
@@ -21,7 +25,7 @@ interface PdfAttachment {
   isLoading?: boolean
 }
 
-export function ChatInput({ onSend, onStop, isLoading, isWelcome, reasoningMode, onToggleReasoningMode }: ChatInputProps) {
+export function ChatInput({ onSend, onStop, isLoading, isWelcome, reasoningMode, onToggleReasoningMode, gamblingMode, onToggleGamblingMode, hasFlashcards, onShowFlashcards }: ChatInputProps) {
   const [message, setMessage] = useState('')
   const [attachments, setAttachments] = useState<ImageAttachment[]>([])
   const [pdfAttachments, setPdfAttachments] = useState<PdfAttachment[]>([])
@@ -196,12 +200,38 @@ export function ChatInput({ onSend, onStop, isLoading, isWelcome, reasoningMode,
           <Brain size={20} />
         </button>
         
+        {/* Gambling Mode Toggle */}
+        <button
+          className={`chat-input-gambling ${gamblingMode ? 'active' : ''}`}
+          onClick={onToggleGamblingMode}
+          aria-label="Gambling Mode"
+          type="button"
+          title={gamblingMode ? "Lucky Larry Mode: ON 🎰" : "Enable Gambling Advisor"}
+        >
+          <Dices size={20} />
+        </button>
+
+        {/* Flashcards Button */}
+        {hasFlashcards && onShowFlashcards && (
+          <button
+            className="chat-input-flashcards"
+            onClick={onShowFlashcards}
+            aria-label="View Flashcards"
+            type="button"
+            title="View your study flashcards"
+          >
+            <BookOpen size={20} />
+          </button>
+        )}
+        
         <textarea
           ref={textareaRef}
           className="chat-input-textarea"
-          placeholder={reasoningMode 
-            ? "Interactive mode: I'll guide you step by step..." 
-            : (isWelcome ? "Ask me anything... (paste screenshots or attach PDFs!)" : "Type your message...")}
+          placeholder={gamblingMode 
+            ? "🎰 Describe a gambling scenario for Lucky Larry..." 
+            : (reasoningMode 
+              ? "Interactive mode: I'll guide you step by step..." 
+              : (isWelcome ? "Ask me anything... (paste screenshots or attach PDFs!)" : "Type your message..."))}
           value={message}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
@@ -240,9 +270,11 @@ export function ChatInput({ onSend, onStop, isLoading, isWelcome, reasoningMode,
       />
 
       <p className="chat-input-hint">
-        {reasoningMode 
-          ? "🧠 Interactive mode: step-by-step explanations with images and speech"
-          : "Press Enter to send, Shift+Enter for new line"
+        {gamblingMode 
+          ? "🎰 Gambling mode: Lucky Larry will analyze your scenario (educational satire)"
+          : (reasoningMode 
+            ? "🧠 Interactive mode: step-by-step explanations with images and speech"
+            : "Press Enter to send, Shift+Enter for new line")
         }
       </p>
     </div>

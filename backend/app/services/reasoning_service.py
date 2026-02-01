@@ -55,11 +55,24 @@ CRITICAL FORMATTING RULES:
         messages = [{"role": "system", "content": system_prompt}]
         
         if image:
+            # Handle both URL and base64 images
+            if image.startswith('data:'):
+                # It's already a data URL
+                image_url = image
+            elif image.startswith('http'):
+                # It's a regular URL
+                image_url = image
+            else:
+                # Assume it's raw base64, wrap it
+                image_url = f"data:image/jpeg;base64,{image}"
+            
+            print(f"[Reasoning] Processing image, length: {len(image)}, type: {'data:' if image.startswith('data:') else 'url' if image.startswith('http') else 'base64'}")
+            
             messages.append({
                 "role": "user",
                 "content": [
                     {"type": "text", "text": f"Analyze this problem: {problem}"},
-                    {"type": "image_url", "image_url": {"url": image}}
+                    {"type": "image_url", "image_url": {"url": image_url}}
                 ]
             })
         else:
@@ -81,12 +94,21 @@ CRITICAL FORMATTING RULES:
                 timeout=60.0
             )
             
+            print(f"[Reasoning] OpenAI response status: {response.status_code}")
+            
             if response.status_code == 200:
                 data = response.json()
                 content = data["choices"][0]["message"]["content"]
-                return json.loads(content)
+                try:
+                    return json.loads(content)
+                except json.JSONDecodeError as e:
+                    print(f"[Reasoning] JSON parse error: {e}")
+                    print(f"[Reasoning] Raw content: {content[:500]}")
+                    raise Exception(f"Invalid JSON response from AI: {e}")
             else:
-                raise Exception(f"OpenAI error: {response.text}")
+                error_detail = response.text
+                print(f"[Reasoning] OpenAI API Error: {error_detail}")
+                raise Exception(f"OpenAI error: {error_detail}")
     
     async def generate_step_image(self, image_prompt: str) -> Optional[str]:
         """Generate a simple diagram for a step using DALL-E"""

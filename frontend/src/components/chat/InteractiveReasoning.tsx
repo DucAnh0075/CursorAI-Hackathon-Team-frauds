@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react'
 import katex from 'katex'
 import 'katex/dist/katex.min.css'
-import { chatService, ReasoningStep, ReasoningAnalysis } from '@/services/chatService'
+import { chatService, ReasoningStep, ReasoningAnalysis, SlideshowData } from '@/services/chatService'
+import { FlashcardSet } from '@/types/chat'
 import './InteractiveReasoning.css'
 
 interface Props {
@@ -9,6 +10,8 @@ interface Props {
   image?: string
   onComplete: () => void
   onCancel: () => void
+  onCreateFlashcards?: (flashcardSet: FlashcardSet) => void
+  onCreateSlideshow?: (slideshow: SlideshowData) => void
 }
 
 // Render raw LaTeX (math field without delimiters) as display math
@@ -52,13 +55,17 @@ export const InteractiveReasoning: React.FC<Props> = ({
   problem,
   image,
   onComplete,
-  onCancel
+  onCancel,
+  onCreateFlashcards,
+  onCreateSlideshow
 }) => {
   const [analysis, setAnalysis] = useState<ReasoningAnalysis | null>(null)
   const [currentStep, setCurrentStep] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isPlaying, setIsPlaying] = useState(false)
+  const [creatingFlashcards, setCreatingFlashcards] = useState(false)
+  const [creatingSlideshow, setCreatingSlideshow] = useState(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
   // Analyze the problem on mount
@@ -116,6 +123,62 @@ export const InteractiveReasoning: React.FC<Props> = ({
   const handlePrev = () => {
     if (currentStep > 0) {
       setCurrentStep(prev => prev - 1)
+    }
+  }
+
+  const handleCreateFlashcards = async () => {
+    if (!analysis || !onCreateFlashcards) return
+    
+    try {
+      setCreatingFlashcards(true)
+      
+      // Build context from the analysis
+      const context = analysis.steps.map(s => 
+        `Step ${s.step_number}: ${s.title}\n${s.explanation}\nKey insight: ${s.key_insight}`
+      ).join('\n\n')
+      
+      const result = await chatService.generateFlashcards(
+        problem,
+        context + `\n\nFinal answer: ${analysis.final_answer}`,
+        image,
+        5
+      )
+      
+      // Create the flashcard set
+      const flashcardSet: FlashcardSet = {
+        id: crypto.randomUUID(),
+        topic_title: result.topic_title,
+        description: result.description,
+        cards: result.cards,
+        study_tips: result.study_tips,
+        createdAt: new Date()
+      }
+      
+      onCreateFlashcards(flashcardSet)
+    } catch (err) {
+      console.error('Failed to create flashcards:', err)
+    } finally {
+      setCreatingFlashcards(false)
+    }
+  }
+
+  const handleCreateSlideshow = async () => {
+    if (!analysis || !onCreateSlideshow) return
+    
+    try {
+      setCreatingSlideshow(true)
+      
+      const result = await chatService.generateSlideshow(problem, image, analysis)
+      
+      if (result.success) {
+        onCreateSlideshow(result)
+      } else {
+        console.error('Slideshow generation failed:', result.error)
+      }
+    } catch (err) {
+      console.error('Failed to create slideshow:', err)
+    } finally {
+      setCreatingSlideshow(false)
     }
   }
 
@@ -197,6 +260,28 @@ export const InteractiveReasoning: React.FC<Props> = ({
           <strong>Final Answer:</strong>
           <div dangerouslySetInnerHTML={{ __html: renderRawMath(analysis.final_answer) }} />
         </div>
+      )}
+
+      {/* Flashcard button (on last step) */}
+      {isLastStep && onCreateFlashcards && (
+        <button 
+          className="reasoning-btn reasoning-btn-flashcards"
+          onClick={handleCreateFlashcards}
+          disabled={creatingFlashcards}
+        >
+          {creatingFlashcards ? '📚 Creating...' : '📚 Create Flashcards'}
+        </button>
+      )}
+
+      {/* Slideshow button (on last step) */}
+      {isLastStep && onCreateSlideshow && (
+        <button 
+          className="reasoning-btn reasoning-btn-slideshow"
+          onClick={handleCreateSlideshow}
+          disabled={creatingSlideshow}
+        >
+          {creatingSlideshow ? '🎬 Generating...' : '🎬 Create Slideshow'}
+        </button>
       )}
 
       {/* Controls */}
