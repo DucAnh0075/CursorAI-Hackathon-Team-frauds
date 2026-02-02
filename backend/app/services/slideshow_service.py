@@ -157,7 +157,7 @@ Return ONLY valid JSON, no other text.'''
                 })
             
             response = await client.post(
-                f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={self.gemini_key}",
+                f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key={self.gemini_key}",
                 headers={"Content-Type": "application/json"},
                 json={
                     "contents": [{"role": "user", "parts": parts}],
