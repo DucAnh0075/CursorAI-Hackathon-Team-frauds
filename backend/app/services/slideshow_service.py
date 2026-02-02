@@ -18,6 +18,7 @@ class SlideshowService:
     
     def __init__(self):
         self.openai_key = settings.OPENAI_API_KEY
+        self.gemini_key = settings.GEMINI_API_KEY
         self.hume_key = settings.HUME_API_KEY
         self.minimax_key = settings.MINIMAX_API_KEY
         self.minimax_api_host = "https://api.minimax.io"  # Global API
@@ -57,7 +58,7 @@ class SlideshowService:
             return {"success": False, "error": str(e)}
     
     async def _generate_lesson(self, problem: str, image: Optional[str] = None) -> Dict[str, Any]:
-        """Generate lesson content"""
+        """Generate lesson content - Gemini first, OpenAI fallback"""
         
         prompt = '''You are creating an educational video like a teacher at a blackboard.
 
@@ -112,8 +113,78 @@ VOICE - speak math naturally:
 - "log base 3 of 10"
 - "lambda equals"
 
-GENERATE 10-12 boards, 2-4 lines each, 40-60 words per voice.'''
+GENERATE 10-12 boards, 2-4 lines each, 40-60 words per voice.
 
+Return ONLY valid JSON, no other text.'''
+
+        # Try Gemini first
+        if self.gemini_key:
+            try:
+                print(f"[Slideshow] Using Gemini API for lesson generation...")
+                lesson = await self._generate_lesson_gemini(problem, image, prompt)
+                if lesson:
+                    return lesson
+            except Exception as e:
+                print(f"[Slideshow] Gemini failed: {e}, falling back to OpenAI")
+        
+        # Fallback to OpenAI
+        if self.openai_key:
+            print(f"[Slideshow] Using OpenAI API for lesson generation...")
+            return await self._generate_lesson_openai(problem, image, prompt)
+        
+        raise Exception("No API key available for lesson generation")
+    
+    async def _generate_lesson_gemini(self, problem: str, image: Optional[str], prompt: str) -> Dict[str, Any]:
+        """Generate lesson using Gemini API"""
+        async with httpx.AsyncClient() as client:
+            # Build Gemini request
+            parts = [{"text": prompt + f"\n\nProblem: {problem}"}]
+            
+            if image:
+                # Extract image data for Gemini
+                if image.startswith('data:image'):
+                    img_data = image.split(',')[1] if ',' in image else image
+                    mime_type = image.split(';')[0].split(':')[1] if 'data:' in image else 'image/jpeg'
+                else:
+                    img_data = image
+                    mime_type = 'image/jpeg'
+                
+                parts.insert(0, {
+                    "inline_data": {
+                        "mime_type": mime_type,
+                        "data": img_data
+                    }
+                })
+            
+            response = await client.post(
+                f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key={self.gemini_key}",
+                headers={"Content-Type": "application/json"},
+                json={
+                    "contents": [{"role": "user", "parts": parts}],
+                    "generationConfig": {
+                        "temperature": 0.7,
+                        "maxOutputTokens": 8192,
+                        "responseMimeType": "application/json"
+                    }
+                },
+                timeout=120.0
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                if "candidates" in data and len(data["candidates"]) > 0:
+                    content = data["candidates"][0]["content"]
+                    if "parts" in content and len(content["parts"]) > 0:
+                        text = content["parts"][0]["text"]
+                        # Parse JSON from response
+                        lesson = json.loads(text)
+                        print(f"[Slideshow] Gemini generated {len(lesson.get('boards', []))} boards")
+                        return lesson
+            else:
+                raise Exception(f"Gemini API error: {response.status_code} - {response.text[:200]}")
+    
+    async def _generate_lesson_openai(self, problem: str, image: Optional[str], prompt: str) -> Dict[str, Any]:
+        """Generate lesson using OpenAI API"""
         messages = [{"role": "system", "content": prompt}]
         
         if image:
@@ -146,7 +217,7 @@ GENERATE 10-12 boards, 2-4 lines each, 40-60 words per voice.'''
                 data = response.json()
                 content = data["choices"][0]["message"]["content"]
                 lesson = json.loads(content)
-                print(f"[Slideshow] Generated {len(lesson.get('boards', []))} boards")
+                print(f"[Slideshow] OpenAI generated {len(lesson.get('boards', []))} boards")
                 return lesson
             else:
                 raise Exception(f"OpenAI error: {response.status_code} - {response.text[:200]}")
