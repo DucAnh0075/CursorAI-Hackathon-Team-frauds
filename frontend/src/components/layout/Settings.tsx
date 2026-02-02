@@ -7,7 +7,7 @@ export function Settings() {
   const [isOpen, setIsOpen] = useState(false)
   const [showModal, setShowModal] = useState(false)
   const [selectedModel, setSelectedModel] = useState<string>(() => {
-    return localStorage.getItem('selectedModel') || 'gemini'
+    return localStorage.getItem('selectedModel') || 'manus'
   })
   const menuRef = useRef<HTMLDivElement>(null)
   const { theme, toggleTheme, setTheme } = useTheme()

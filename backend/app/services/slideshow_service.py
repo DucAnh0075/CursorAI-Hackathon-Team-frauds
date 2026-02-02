@@ -19,6 +19,9 @@ class SlideshowService:
     def __init__(self):
         self.openai_key = settings.OPENAI_API_KEY
         self.gemini_key = settings.GEMINI_API_KEY
+        self.manus_key = settings.MANUS_API_KEY
+        self.manus_api_host = settings.MANUS_API_BASE_URL
+        self.manus_model = settings.MANUS_MODEL
         self.hume_key = settings.HUME_API_KEY
         self.minimax_key = settings.MINIMAX_API_KEY
         self.minimax_api_host = "https://api.minimax.io"  # Global API
@@ -58,6 +61,7 @@ class SlideshowService:
             return {"success": False, "error": str(e)}
     
     async def _generate_lesson(self, problem: str, image: Optional[str] = None) -> Dict[str, Any]:
+        """Generate lesson with Manus-first fallback"""
         """Generate lesson content - Gemini first, OpenAI fallback"""
         
         prompt = '''You are creating an educational video like a teacher at a blackboard.
@@ -117,22 +121,82 @@ GENERATE 10-12 boards, 2-4 lines each, 40-60 words per voice.
 
 Return ONLY valid JSON, no other text.'''
 
-        # Try Gemini first
-        if self.gemini_key:
+        # Try Manus first (most reliable), then Gemini, then OpenAI
+        if self.manus_key:
+            try:
+                print(f"[Slideshow] Using Manus API for lesson generation...")
+                lesson = await self._generate_lesson_manus(problem, image, prompt)
+            except Exception as e:
+                print(f"[Slideshow] Manus failed: {e}") 
+                if self.gemini_key:
+                    try:
+                        print(f"[Slideshow] Falling back to Gemini")
+                        lesson = await self._generate_lesson_gemini(problem, image, prompt)
+                    except Exception as e2:
+                        print(f"[Slideshow] Gemini failed: {e2}")
+                        print(f"[Slideshow] Falling back to OpenAI")
+                        lesson = await self._generate_lesson_openai(problem, image, prompt)
+                else:
+                    print(f"[Slideshow] Falling back to OpenAI")
+                    lesson = await self._generate_lesson_openai(problem, image, prompt)
+        elif self.gemini_key:
             try:
                 print(f"[Slideshow] Using Gemini API for lesson generation...")
                 lesson = await self._generate_lesson_gemini(problem, image, prompt)
-                if lesson:
-                    return lesson
             except Exception as e:
                 print(f"[Slideshow] Gemini failed: {e}, falling back to OpenAI")
-        
-        # Fallback to OpenAI
-        if self.openai_key:
+                lesson = await self._generate_lesson_openai(problem, image, prompt)
+        else:
+            # Fallback to OpenAI
             print(f"[Slideshow] Using OpenAI API for lesson generation...")
-            return await self._generate_lesson_openai(problem, image, prompt)
+            lesson = await self._generate_lesson_openai(problem, image, prompt)
         
-        raise Exception("No API key available for lesson generation")
+        slides = self._create_slides(lesson)
+        print(f"[Slideshow] Created {len(slides)} slides")
+        
+        slides_with_audio = await self._generate_all_audio(slides)
+        print(f"[Slideshow] Generated audio")
+        
+        return {"slides": slides_with_audio}
+    
+    async def _generate_lesson_manus(self, problem: str, image: Optional[str], prompt: str) -> Dict[str, Any]:
+        """Generate lesson using Manus AI (OpenAI SDK compatible)"""
+        messages = [{"role": "system", "content": prompt}]
+        
+        if image:
+            image_url = image if image.startswith('data:') or image.startswith('http') else f"data:image/jpeg;base64,{image}"
+            messages.append({
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": f"Create a detailed lesson (12-15 boards) for the problem in this image. User said: '{problem}' (ignore this, extract from image)"},
+                    {"type": "image_url", "image_url": {"url": image_url}}
+                ]
+            })
+        else:
+            messages.append({"role": "user", "content": f"Create a detailed lesson (12-15 boards) for: {problem}"})
+        
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                f"{self.manus_api_host}/v1/chat/completions",
+                headers={"Authorization": f"Bearer {self.manus_key}", "Content-Type": "application/json"},
+                json={
+                    "model": self.manus_model,
+                    "messages": messages,
+                    "max_tokens": 5000,
+                    "temperature": 0.7,
+                    "response_format": {"type": "json_object"}
+                },
+                timeout=120.0
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                content = data["choices"][0]["message"]["content"]
+                lesson = json.loads(content)
+                print(f"[Slideshow] Manus generated {len(lesson.get('boards', []))} boards")
+                return lesson
+            else:
+                raise Exception(f"Manus error: {response.status_code} - {response.text[:200]}")
     
     async def _generate_lesson_gemini(self, problem: str, image: Optional[str], prompt: str) -> Dict[str, Any]:
         """Generate lesson using Gemini API"""

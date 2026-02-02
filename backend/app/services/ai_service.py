@@ -27,28 +27,15 @@ class AIService:
         message: str,
         images: Optional[List[str]] = None,
         conversation_history: Optional[List[Message]] = None,
-        model: str = "gemini",
+        model: str = "manus",
         reasoning_mode: bool = False
     ) -> str:
         """
         Generate AI response with specified model
-        Models: "openai", "manus", or "gemini"
+        Models: "manus", "openai", or "gemini"
         reasoning_mode: enables step-by-step explanations with visual markers
         """
-        # Use Gemini AI if selected and key is available
-        if model == "gemini" and self.gemini_key:
-            try:
-                print(f"[AI Service] Using Gemini AI API, reasoning_mode: {reasoning_mode}")
-                return await self._gemini_response(message, images, conversation_history, reasoning_mode)
-            except Exception as e:
-                print(f"[AI Service] Gemini AI API error: {e}")
-                # Fall back to OpenAI if available
-                if self.openai_key:
-                    print(f"[AI Service] Falling back to OpenAI")
-                    return await self._openai_response(message, images, conversation_history, reasoning_mode)
-                return self._mock_response(message)
-        
-        # Use Manus AI if selected and key is available
+        # Use Manus AI if selected and key is available (most reliable)
         if model == "manus" and self.manus_key:
             try:
                 print(f"[AI Service] Using Manus AI API, reasoning_mode: {reasoning_mode}")
@@ -60,6 +47,19 @@ class AIService:
                     print(f"[AI Service] Falling back to Gemini")
                     return await self._gemini_response(message, images, conversation_history, reasoning_mode)
                 elif self.openai_key:
+                    print(f"[AI Service] Falling back to OpenAI")
+                    return await self._openai_response(message, images, conversation_history, reasoning_mode)
+                return self._mock_response(message)
+        
+        # Use Gemini AI if selected and key is available
+        if model == "gemini" and self.gemini_key:
+            try:
+                print(f"[AI Service] Using Gemini AI API, reasoning_mode: {reasoning_mode}")
+                return await self._gemini_response(message, images, conversation_history, reasoning_mode)
+            except Exception as e:
+                print(f"[AI Service] Gemini AI API error: {e}")
+                # Fall back to OpenAI if available
+                if self.openai_key:
                     print(f"[AI Service] Falling back to OpenAI")
                     return await self._openai_response(message, images, conversation_history, reasoning_mode)
                 return self._mock_response(message)
@@ -77,10 +77,17 @@ class AIService:
                     return await self._gemini_response(message, images, conversation_history, reasoning_mode)
                 return self._mock_response(message)
         
-        # Default fallback order: Gemini -> OpenAI -> Mock
+        # Default fallback order: Manus -> Gemini -> OpenAI -> Mock
+        if self.manus_key:
+            try:
+                print(f"[AI Service] Using Manus AI API (default)")
+                return await self._manus_response(message, images, conversation_history, reasoning_mode)
+            except Exception as e:
+                print(f"[AI Service] Manus error: {e}")
+        
         if self.gemini_key:
             try:
-                print(f"[AI Service] Using Gemini AI API (default)")
+                print(f"[AI Service] Using Gemini AI API (fallback)")
                 return await self._gemini_response(message, images, conversation_history, reasoning_mode)
             except Exception as e:
                 print(f"[AI Service] Gemini error: {e}")
