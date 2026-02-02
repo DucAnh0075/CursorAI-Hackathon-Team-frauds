@@ -207,76 +207,90 @@ class AIService:
         history: Optional[List[Message]] = None,
         reasoning_mode: bool = False
     ) -> str:
-        """Generate response using Google Gemini API"""
-        try:
-            async with httpx.AsyncClient() as client:
-                # Build Gemini-format messages
-                contents = []
-                
-                # Add history
-                if history:
-                    for msg in history[-10:]:  # Last 10 messages for context
-                        role = "user" if msg.role == "user" else "model"
-                        contents.append({"role": role, "parts": [{"text": msg.content}]})
-                
-                # Add current message with images
-                parts = []
-                if images:
-                    for img in images:
-                        if img.startswith('data:image'):
-                            # Extract base64 data
-                            img_data = img.split(',')[1] if ',' in img else img
-                            mime_type = img.split(';')[0].split(':')[1] if 'data:' in img else 'image/jpeg'
-                            parts.append({
-                                "inline_data": {
-                                    "mime_type": mime_type,
-                                    "data": img_data
-                                }
-                            })
-                
-                parts.append({"text": message})
-                contents.append({"role": "user", "parts": parts})
-                
-                # System instruction for reasoning mode
-                system_instruction = None
-                if reasoning_mode:
-                    system_instruction = {
-                        "parts": [{
-                            "text": "You are a math tutor. Explain problems STEP BY STEP with numbered steps, calculations, and insights."
-                        }]
+        """Generate response using Google Gemini API with retry logic"""
+        import asyncio
+        
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                async with httpx.AsyncClient() as client:
+                    # Build Gemini-format messages
+                    contents = []
+                    
+                    # Add history
+                    if history:
+                        for msg in history[-10:]:  # Last 10 messages for context
+                            role = "user" if msg.role == "user" else "model"
+                            contents.append({"role": role, "parts": [{"text": msg.content}]})
+                    
+                    # Add current message with images
+                    parts = []
+                    if images:
+                        for img in images:
+                            if img.startswith('data:image'):
+                                # Extract base64 data
+                                img_data = img.split(',')[1] if ',' in img else img
+                                mime_type = img.split(';')[0].split(':')[1] if 'data:' in img else 'image/jpeg'
+                                parts.append({
+                                    "inline_data": {
+                                        "mime_type": mime_type,
+                                        "data": img_data
+                                    }
+                                })
+                    
+                    parts.append({"text": message})
+                    contents.append({"role": "user", "parts": parts})
+                    
+                    # System instruction for reasoning mode
+                    system_instruction = None
+                    if reasoning_mode:
+                        system_instruction = {
+                            "parts": [{
+                                "text": "You are a math tutor. Explain problems STEP BY STEP with numbered steps, calculations, and insights."
+                            }]
+                        }
+                    
+                    # Build request body
+                    request_body = {
+                        "contents": contents,
+                        "generationConfig": {
+                            "temperature": 0.7,
+                            "maxOutputTokens": 8192
+                        }
                     }
-                
-                # Build request body
-                request_body = {
-                    "contents": contents,
-                    "generationConfig": {
-                        "temperature": 0.7,
-                        "maxOutputTokens": 8192
-                    }
-                }
-                if system_instruction:
-                    request_body["systemInstruction"] = system_instruction
-                
-                # Make request
-                response = await client.post(
-                    f"{self.gemini_base_url}/models/{self.gemini_model}:generateContent?key={self.gemini_key}",
-                    headers={"Content-Type": "application/json"},
-                    json=request_body,
-                    timeout=120.0
-                )
-                
-                if response.status_code == 200:
-                    data = response.json()
-                    if "candidates" in data and len(data["candidates"]) > 0:
-                        content = data["candidates"][0]["content"]
-                        if "parts" in content and len(content["parts"]) > 0:
-                            return content["parts"][0]["text"]
-                    raise Exception("No content in Gemini response")
-                else:
-                    raise Exception(f"Gemini API error: {response.status_code} - {response.text}")
-        except Exception as e:
-            print(f"Gemini AI error: {e}")
-            raise
+                    if system_instruction:
+                        request_body["systemInstruction"] = system_instruction
+                    
+                    # Make request
+                    response = await client.post(
+                        f"{self.gemini_base_url}/models/{self.gemini_model}:generateContent?key={self.gemini_key}",
+                        headers={"Content-Type": "application/json"},
+                        json=request_body,
+                        timeout=120.0
+                    )
+                    
+                    if response.status_code == 200:
+                        data = response.json()
+                        if "candidates" in data and len(data["candidates"]) > 0:
+                            content = data["candidates"][0]["content"]
+                            if "parts" in content and len(content["parts"]) > 0:
+                                return content["parts"][0]["text"]
+                        raise Exception("No content in Gemini response")
+                    elif response.status_code == 429:
+                        # Rate limited - wait and retry
+                        wait_time = (attempt + 1) * 5  # 5, 10, 15 seconds
+                        print(f"[Gemini] Rate limited, waiting {wait_time}s before retry {attempt + 1}/{max_retries}")
+                        await asyncio.sleep(wait_time)
+                        continue
+                    else:
+                        raise Exception(f"Gemini API error: {response.status_code} - {response.text}")
+            except Exception as e:
+                if attempt == max_retries - 1:
+                    print(f"Gemini AI error after {max_retries} attempts: {e}")
+                    raise
+                print(f"[Gemini] Attempt {attempt + 1} failed: {e}")
+        
+        raise Exception("Gemini API failed after all retries")
     
     async def _openai_response(
         self,
