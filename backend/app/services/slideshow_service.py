@@ -208,6 +208,10 @@ GENERATE 10-12 boards, 2-4 lines each, 40-60 words per voice.'''
         if not text.strip():
             return None
         
+        # Add pauses for The Organic Chemistry Tutor style delivery
+        # Insert natural pauses with ellipses and commas for measured rhythm
+        processed_text = text.replace(". ", "... ").replace(", ", ",, ")
+        
         # Try MiniMax first
         if self.minimax_key:
             print(f"[Slideshow] Trying MiniMax TTS...")
@@ -221,12 +225,17 @@ GENERATE 10-12 boards, 2-4 lines each, 40-60 words per voice.'''
                         },
                         json={
                             "model": "speech-02-hd",
-                            "text": text,
+                            "text": processed_text,
                             "voice_setting": {
-                                "voice_id": "male-qn-qingse",  # Calm, clear male voice like The Organic Chemistry Tutor
-                                "speed": 0.95,  # Slightly slower for clarity
+                                # The Organic Chemistry Tutor style:
+                                # - Calm, authoritative, soothing male voice
+                                # - North American accent
+                                # - Mid-range pitch, smooth texture
+                                # - Slow, deliberate, patient delivery
+                                "voice_id": "male-qn-qingse",
+                                "speed": 0.85,  # Slow and deliberate like OCT
                                 "vol": 1.0,
-                                "pitch": 0
+                                "pitch": -2  # Slightly deeper, resonant mid-range
                             },
                             "audio_setting": {
                                 "sample_rate": 32000,
