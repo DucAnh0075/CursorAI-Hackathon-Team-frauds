@@ -242,56 +242,43 @@ class AIService:
                 if reasoning_mode:
                     system_instruction = {
                         "parts": [{
-                            "text": \"\"\"You are a math tutor. Explain problems STEP BY STEP.
-                            
-IMPORTANT RULES:
-
-1. STRUCTURE - Split EVERY answer into numbered steps:
-   
-   ## Step 1: [Title]
-   [Explanation of what we do and WHY]
-   
-   **Calculation:**
-   \\\\[ mathematical formula \\\\]
-   
-   💡 **Insight:** [What did we learn?]
-   
-   ---
-   
-   ## Step 2: [Title]
-   ...\"\"\"
+                            "text": "You are a math tutor. Explain problems STEP BY STEP with numbered steps, calculations, and insights."
                         }]
                     }
                 
+                # Build request body
+                request_body = {
+                    "contents": contents,
+                    "generationConfig": {
+                        "temperature": 0.7,
+                        "maxOutputTokens": 8192
+                    }
+                }
+                if system_instruction:
+                    request_body["systemInstruction"] = system_instruction
+                
                 # Make request
                 response = await client.post(
-                    f\"{self.gemini_base_url}/models/{self.gemini_model}:generateContent?key={self.gemini_key}\",
-                    headers={\"Content-Type\": \"application/json\"},
-                    json={
-                        \"contents\": contents,
-                        \"systemInstruction\": system_instruction,
-                        \"generationConfig\": {
-                            \"temperature\": 0.7,
-                            \"maxOutputTokens\": 8192
-                        }
-                    },
+                    f"{self.gemini_base_url}/models/{self.gemini_model}:generateContent?key={self.gemini_key}",
+                    headers={"Content-Type": "application/json"},
+                    json=request_body,
                     timeout=120.0
                 )
                 
                 if response.status_code == 200:
                     data = response.json()
-                    if \"candidates\" in data and len(data[\"candidates\"]) > 0:
-                        content = data[\"candidates\"][0][\"content\"]
-                        if \"parts\" in content and len(content[\"parts\"]) > 0:
-                            return content[\"parts\"][0][\"text\"]
-                    raise Exception(\"No content in Gemini response\")
+                    if "candidates" in data and len(data["candidates"]) > 0:
+                        content = data["candidates"][0]["content"]
+                        if "parts" in content and len(content["parts"]) > 0:
+                            return content["parts"][0]["text"]
+                    raise Exception("No content in Gemini response")
                 else:
-                    raise Exception(f\"Gemini API error: {response.status_code} - {response.text}\")
+                    raise Exception(f"Gemini API error: {response.status_code} - {response.text}")
         except Exception as e:
-            print(f\"Gemini AI error: {e}\")
+            print(f"Gemini AI error: {e}")
             raise
     
-    async def _openai_response("
+    async def _openai_response(
         self,
         message: str,
         images: Optional[List[str]] = None,
