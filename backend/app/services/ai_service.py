@@ -16,22 +16,38 @@ class AIService:
         self.openai_key = settings.OPENAI_API_KEY
         self.minimax_key = settings.MINIMAX_API_KEY
         self.manus_key = settings.MANUS_API_KEY
+        self.gemini_key = settings.GEMINI_API_KEY
         self.manus_base_url = settings.MANUS_API_BASE_URL
         self.manus_model = settings.MANUS_MODEL
+        self.gemini_base_url = settings.GEMINI_API_BASE_URL
+        self.gemini_model = settings.GEMINI_MODEL
     
     async def generate_response(
         self,
         message: str,
         images: Optional[List[str]] = None,
         conversation_history: Optional[List[Message]] = None,
-        model: str = "openai",
+        model: str = "gemini",
         reasoning_mode: bool = False
     ) -> str:
         """
         Generate AI response with specified model
-        Models: "openai" or "manus"
+        Models: "openai", "manus", or "gemini"
         reasoning_mode: enables step-by-step explanations with visual markers
         """
+        # Use Gemini AI if selected and key is available
+        if model == "gemini" and self.gemini_key:
+            try:
+                print(f"[AI Service] Using Gemini AI API, reasoning_mode: {reasoning_mode}")
+                return await self._gemini_response(message, images, conversation_history, reasoning_mode)
+            except Exception as e:
+                print(f"[AI Service] Gemini AI API error: {e}")
+                # Fall back to OpenAI if available
+                if self.openai_key:
+                    print(f"[AI Service] Falling back to OpenAI")
+                    return await self._openai_response(message, images, conversation_history, reasoning_mode)
+                return self._mock_response(message)
+        
         # Use Manus AI if selected and key is available
         if model == "manus" and self.manus_key:
             try:
@@ -39,23 +55,44 @@ class AIService:
                 return await self._manus_response(message, images, conversation_history, reasoning_mode)
             except Exception as e:
                 print(f"[AI Service] Manus AI API error: {e}")
-                # Fall back to OpenAI
-                if self.openai_key:
+                # Fall back to Gemini or OpenAI
+                if self.gemini_key:
+                    print(f"[AI Service] Falling back to Gemini")
+                    return await self._gemini_response(message, images, conversation_history, reasoning_mode)
+                elif self.openai_key:
                     print(f"[AI Service] Falling back to OpenAI")
                     return await self._openai_response(message, images, conversation_history, reasoning_mode)
                 return self._mock_response(message)
         
-        # Use OpenAI if selected (or as default)
-        if self.openai_key:
+        # Use OpenAI if selected
+        if model == "openai" and self.openai_key:
             try:
                 print(f"[AI Service] Using OpenAI API (gpt-4o), reasoning_mode: {reasoning_mode}")
                 return await self._openai_response(message, images, conversation_history, reasoning_mode)
             except Exception as e:
                 print(f"[AI Service] OpenAI API error: {e}")
+                # Fall back to Gemini
+                if self.gemini_key:
+                    print(f"[AI Service] Falling back to Gemini")
+                    return await self._gemini_response(message, images, conversation_history, reasoning_mode)
                 return self._mock_response(message)
-        else:
-            print(f"[AI Service] No API keys available, using mock response")
-            return self._mock_response(message)
+        
+        # Default fallback order: Gemini -> OpenAI -> Mock
+        if self.gemini_key:
+            try:
+                print(f"[AI Service] Using Gemini AI API (default)")
+                return await self._gemini_response(message, images, conversation_history, reasoning_mode)
+            except Exception as e:
+                print(f"[AI Service] Gemini error: {e}")
+        
+        if self.openai_key:
+            try:
+                return await self._openai_response(message, images, conversation_history, reasoning_mode)
+            except Exception as e:
+                print(f"[AI Service] OpenAI error: {e}")
+        
+        print(f"[AI Service] No API keys available, using mock response")
+        return self._mock_response(message)
     
     async def stream_response(
         self,
@@ -163,7 +200,98 @@ class AIService:
                         except json.JSONDecodeError:
                             continue
     
-    async def _openai_response(
+    async def _gemini_response(
+        self,
+        message: str,
+        images: Optional[List[str]] = None,
+        history: Optional[List[Message]] = None,
+        reasoning_mode: bool = False
+    ) -> str:
+        """Generate response using Google Gemini API"""
+        try:
+            async with httpx.AsyncClient() as client:
+                # Build Gemini-format messages
+                contents = []
+                
+                # Add history
+                if history:
+                    for msg in history[-10:]:  # Last 10 messages for context
+                        role = "user" if msg.role == "user" else "model"
+                        contents.append({"role": role, "parts": [{"text": msg.content}]})
+                
+                # Add current message with images
+                parts = []
+                if images:
+                    for img in images:
+                        if img.startswith('data:image'):
+                            # Extract base64 data
+                            img_data = img.split(',')[1] if ',' in img else img
+                            mime_type = img.split(';')[0].split(':')[1] if 'data:' in img else 'image/jpeg'
+                            parts.append({
+                                "inline_data": {
+                                    "mime_type": mime_type,
+                                    "data": img_data
+                                }
+                            })
+                
+                parts.append({"text": message})
+                contents.append({"role": "user", "parts": parts})
+                
+                # System instruction for reasoning mode
+                system_instruction = None
+                if reasoning_mode:
+                    system_instruction = {
+                        "parts": [{
+                            "text": \"\"\"You are a math tutor. Explain problems STEP BY STEP.
+                            
+IMPORTANT RULES:
+
+1. STRUCTURE - Split EVERY answer into numbered steps:
+   
+   ## Step 1: [Title]
+   [Explanation of what we do and WHY]
+   
+   **Calculation:**
+   \\\\[ mathematical formula \\\\]
+   
+   💡 **Insight:** [What did we learn?]
+   
+   ---
+   
+   ## Step 2: [Title]
+   ...\"\"\"
+                        }]
+                    }
+                
+                # Make request
+                response = await client.post(
+                    f\"{self.gemini_base_url}/models/{self.gemini_model}:generateContent?key={self.gemini_key}\",
+                    headers={\"Content-Type\": \"application/json\"},
+                    json={
+                        \"contents\": contents,
+                        \"systemInstruction\": system_instruction,
+                        \"generationConfig\": {
+                            \"temperature\": 0.7,
+                            \"maxOutputTokens\": 8192
+                        }
+                    },
+                    timeout=120.0
+                )
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    if \"candidates\" in data and len(data[\"candidates\"]) > 0:
+                        content = data[\"candidates\"][0][\"content\"]
+                        if \"parts\" in content and len(content[\"parts\"]) > 0:
+                            return content[\"parts\"][0][\"text\"]
+                    raise Exception(\"No content in Gemini response\")
+                else:
+                    raise Exception(f\"Gemini API error: {response.status_code} - {response.text}\")
+        except Exception as e:
+            print(f\"Gemini AI error: {e}\")
+            raise
+    
+    async def _openai_response("
         self,
         message: str,
         images: Optional[List[str]] = None,

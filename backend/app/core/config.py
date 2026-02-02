@@ -14,11 +14,16 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = ""
     MINIMAX_API_KEY: str = ""
     MANUS_API_KEY: str = ""
+    GEMINI_API_KEY: str = ""
     HUME_API_KEY: str = ""
     
     # Manus AI Settings (OpenAI SDK compatible endpoint)
     MANUS_API_BASE_URL: str = "https://api.manus.im"
     MANUS_MODEL: str = "manus-1.6"
+    
+    # Gemini AI Settings
+    GEMINI_API_BASE_URL: str = "https://generativelanguage.googleapis.com/v1beta"
+    GEMINI_MODEL: str = "gemini-1.5-pro"
     
     # MiniMax Video Settings
     MINIMAX_API_BASE_URL: str = "https://api.minimax.chat/v1"

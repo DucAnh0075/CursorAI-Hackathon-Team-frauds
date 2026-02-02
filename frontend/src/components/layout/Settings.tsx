@@ -7,7 +7,7 @@ export function Settings() {
   const [isOpen, setIsOpen] = useState(false)
   const [showModal, setShowModal] = useState(false)
   const [selectedModel, setSelectedModel] = useState<string>(() => {
-    return localStorage.getItem('selectedModel') || 'openai'
+    return localStorage.getItem('selectedModel') || 'gemini'
   })
   const menuRef = useRef<HTMLDivElement>(null)
   const { theme, toggleTheme, setTheme } = useTheme()
@@ -106,6 +106,12 @@ export function Settings() {
                   <label>Select Model</label>
                   <div className="settings-model-toggle">
                     <button
+                      className={`settings-model-btn ${selectedModel === 'gemini' ? 'active' : ''}`}
+                      onClick={() => handleModelChange('gemini')}
+                    >
+                      Gemini
+                    </button>
+                    <button
                       className={`settings-model-btn ${selectedModel === 'openai' ? 'active' : ''}`}
                       onClick={() => handleModelChange('openai')}
                     >
@@ -120,7 +126,11 @@ export function Settings() {
                   </div>
                 </div>
                 <p className="settings-model-info">
-                  Current: <strong>{selectedModel === 'openai' ? 'OpenAI GPT' : 'Manus AI'}</strong>
+                  Current: <strong>{
+                    selectedModel === 'gemini' ? 'Google Gemini' : 
+                    selectedModel === 'openai' ? 'OpenAI GPT' : 
+                    'Manus AI'
+                  }</strong>
                 </p>
               </div>
 
