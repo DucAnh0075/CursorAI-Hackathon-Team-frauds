@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     
     # Gemini AI Settings
     GEMINI_API_BASE_URL: str = "https://generativelanguage.googleapis.com/v1beta"
-    GEMINI_MODEL: str = "gemini-1.5-flash"
+    GEMINI_MODEL: str = "gemini-2.0-flash"
     
     # MiniMax Video Settings
     MINIMAX_API_BASE_URL: str = "https://api.minimax.chat/v1"
