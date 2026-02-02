@@ -112,6 +112,12 @@ export function Settings() {
                       LangChain
                     </button>
                     <button
+                      className={`settings-model-btn ${selectedModel === 'minimax' ? 'active' : ''}`}
+                      onClick={() => handleModelChange('minimax')}
+                    >
+                      MiniMax
+                    </button>
+                    <button
                       className={`settings-model-btn ${selectedModel === 'gemini' ? 'active' : ''}`}
                       onClick={() => handleModelChange('gemini')}
                     >
@@ -134,6 +140,7 @@ export function Settings() {
                 <p className="settings-model-info">
                   Current: <strong>{
                     selectedModel === 'langchain' ? 'LangChain' :
+                    selectedModel === 'minimax' ? 'MiniMax' :
                     selectedModel === 'gemini' ? 'Google Gemini' : 
                     selectedModel === 'openai' ? 'OpenAI GPT' : 
                     'Manus AI'

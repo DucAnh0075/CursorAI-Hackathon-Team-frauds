@@ -30,6 +30,8 @@ class Settings(BaseSettings):
     MINIMAX_API_BASE_URL: str = "https://api.minimax.chat/v1"
     MINIMAX_VIDEO_MODEL: str = "video-01"
     MINIMAX_GROUP_ID: str = ""
+    MINIMAX_CHAT_URL: str = ""
+    MINIMAX_CHAT_MODEL: str = ""
     
     # CORS - allow Vercel deployments
     CORS_ORIGINS: List[str] = [

@@ -17,6 +17,8 @@ class AIService:
         self.minimax_key = settings.MINIMAX_API_KEY
         self.manus_key = settings.MANUS_API_KEY
         self.gemini_key = settings.GEMINI_API_KEY
+        self.minimax_chat_url = settings.MINIMAX_CHAT_URL
+        self.minimax_chat_model = settings.MINIMAX_CHAT_MODEL
         self.manus_base_url = settings.MANUS_API_BASE_URL
         self.manus_model = settings.MANUS_MODEL
         self.gemini_base_url = settings.GEMINI_API_BASE_URL
@@ -32,7 +34,7 @@ class AIService:
     ) -> str:
         """
         Generate AI response with specified model
-        Models: "langchain", "manus", "openai", or "gemini"
+        Models: "langchain", "minimax", "manus", "openai", or "gemini"
         reasoning_mode: enables step-by-step explanations with visual markers
         """
         # Use LangChain as primary (Gemini/OpenAI via LangChain)
@@ -42,6 +44,28 @@ class AIService:
                 return await self._langchain_response(message, images, conversation_history, reasoning_mode)
             except Exception as e:
                 print(f"[AI Service] LangChain error: {e}")
+                # Fall back to Manus or direct providers
+                if self.minimax_key:
+                    print(f"[AI Service] Falling back to MiniMax")
+                    return await self._minimax_response(message, images, conversation_history, reasoning_mode)
+                if self.manus_key:
+                    print(f"[AI Service] Falling back to Manus")
+                    return await self._manus_response(message, images, conversation_history, reasoning_mode)
+                if self.gemini_key:
+                    print(f"[AI Service] Falling back to Gemini")
+                    return await self._gemini_response(message, images, conversation_history, reasoning_mode)
+                if self.openai_key:
+                    print(f"[AI Service] Falling back to OpenAI")
+                    return await self._openai_response(message, images, conversation_history, reasoning_mode)
+                return self._mock_response(message)
+
+        # Use MiniMax if selected and key is available
+        if model == "minimax" and self.minimax_key:
+            try:
+                print(f"[AI Service] Using MiniMax API, reasoning_mode: {reasoning_mode}")
+                return await self._minimax_response(message, images, conversation_history, reasoning_mode)
+            except Exception as e:
+                print(f"[AI Service] MiniMax API error: {e}")
                 # Fall back to Manus or direct providers
                 if self.manus_key:
                     print(f"[AI Service] Falling back to Manus")
@@ -96,13 +120,20 @@ class AIService:
                     return await self._gemini_response(message, images, conversation_history, reasoning_mode)
                 return self._mock_response(message)
         
-        # Default fallback order: LangChain -> Manus -> Gemini -> OpenAI -> Mock
+        # Default fallback order: LangChain -> MiniMax -> Manus -> Gemini -> OpenAI -> Mock
         if self.gemini_key or self.openai_key:
             try:
                 print(f"[AI Service] Using LangChain (default)")
                 return await self._langchain_response(message, images, conversation_history, reasoning_mode)
             except Exception as e:
                 print(f"[AI Service] LangChain error: {e}")
+
+        if self.minimax_key:
+            try:
+                print(f"[AI Service] Using MiniMax API (default)")
+                return await self._minimax_response(message, images, conversation_history, reasoning_mode)
+            except Exception as e:
+                print(f"[AI Service] MiniMax error: {e}")
 
         if self.manus_key:
             try:
@@ -178,6 +209,48 @@ class AIService:
             return result.content
         except Exception as e:
             raise Exception(f"LangChain error: {e}")
+
+    async def _minimax_response(
+        self,
+        message: str,
+        images: Optional[List[str]] = None,
+        history: Optional[List[Message]] = None,
+        reasoning_mode: bool = False
+    ) -> str:
+        """Generate response using MiniMax chat endpoint (OpenAI-compatible)."""
+        if not self.minimax_chat_url or not self.minimax_chat_model:
+            return "MiniMax chat is not configured. Please set MINIMAX_CHAT_URL and MINIMAX_CHAT_MODEL."
+
+        if images:
+            # MiniMax text chat may not support images; fall back to Gemini/OpenAI if available
+            if self.gemini_key:
+                return await self._gemini_response(message, images, history, reasoning_mode)
+            if self.openai_key:
+                return await self._openai_response(message, images, history, reasoning_mode)
+
+        messages = self._build_messages(message, images=None, history=history, reasoning_mode=reasoning_mode)
+
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                self.minimax_chat_url,
+                headers={
+                    "Authorization": f"Bearer {self.minimax_key}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "model": self.minimax_chat_model,
+                    "messages": messages,
+                    "temperature": 0.7
+                },
+                timeout=120.0
+            )
+
+            if response.status_code == 200:
+                data = response.json()
+                if "choices" in data and data["choices"]:
+                    return data["choices"][0]["message"]["content"]
+                raise Exception("No content in MiniMax response")
+            raise Exception(f"MiniMax API error: {response.status_code} - {response.text}")
     
     async def stream_response(
         self,
