@@ -15,7 +15,6 @@ class Settings(BaseSettings):
     MINIMAX_API_KEY: str = ""
     MANUS_API_KEY: str = ""
     HUME_API_KEY: str = ""
-    GEMINI_API_KEY: str = ""
     
     # Manus AI Settings (OpenAI SDK compatible endpoint)
     MANUS_API_BASE_URL: str = "https://api.manus.im"

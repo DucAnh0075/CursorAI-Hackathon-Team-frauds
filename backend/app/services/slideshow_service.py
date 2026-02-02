@@ -208,6 +208,9 @@ GENERATE 10-12 boards, 2-4 lines each, 40-60 words per voice.'''
         if not text.strip():
             return None
         
+        # Preprocess text for OCT-style delivery: add strategic pauses
+        processed_text = self._preprocess_text_for_oct_style(text)
+        
         # Try MiniMax first
         if self.minimax_key:
             print(f"[Slideshow] Trying MiniMax TTS...")
@@ -221,18 +224,21 @@ GENERATE 10-12 boards, 2-4 lines each, 40-60 words per voice.'''
                         },
                         json={
                             "model": "speech-02-hd",
-                            "text": text,
+                            "text": processed_text,
                             "voice_setting": {
-                                "voice_id": "male-qn-qingse",  # Calm, clear male voice like The Organic Chemistry Tutor
-                                "speed": 0.95,  # Slightly slower for clarity
+                                "voice_id": "male-qn-qingse",  # Calm North American male voice
+                                "speed": 0.88,  # Slow, deliberate pace like OCT
                                 "vol": 1.0,
-                                "pitch": 0
+                                "pitch": -0.5  # Slightly lower for that mid-range authoritative tone
                             },
                             "audio_setting": {
                                 "sample_rate": 32000,
                                 "bitrate": 128000,
                                 "format": "mp3",
                                 "channel": 1
+                            },
+                            "pronunciation_dict": {
+                                "style": "instructional"  # Academic/tutorial style
                             }
                         },
                         timeout=60.0
@@ -266,9 +272,9 @@ GENERATE 10-12 boards, 2-4 lines each, 40-60 words per voice.'''
                         headers={"Authorization": f"Bearer {self.openai_key}", "Content-Type": "application/json"},
                         json={
                             "model": "tts-1-hd",
-                            "input": text,
-                            "voice": "shimmer",
-                            "speed": 0.95
+                            "input": processed_text,
+                            "voice": "onyx",  # Deeper male voice for OCT style
+                            "speed": 0.88  # Match MiniMax speed
                         },
                         timeout=60.0
                     )
@@ -281,6 +287,25 @@ GENERATE 10-12 boards, 2-4 lines each, 40-60 words per voice.'''
                 print(f"[Slideshow] OpenAI TTS also failed: {e}")
         
         return None
+    
+    def _preprocess_text_for_oct_style(self, text: str) -> str:
+        """Add strategic pauses for OCT-style delivery"""
+        # Add pauses after transitional phrases
+        text = re.sub(r'\b(So|Now|First|Next|Then|Finally|Therefore|Thus|However)\b,?', r'\1...', text)
+        
+        # Add pauses after "we" phrases (common in OCT)
+        text = re.sub(r'\b(we have|we get|we need|we want|we can|we\'re going to)\b', r'\1...', text)
+        
+        # Add pauses before/after mathematical operations
+        text = re.sub(r'\b(equals|plus|minus|times|divided by)\b', r'... \1 ...', text)
+        
+        # Add pauses after questions
+        text = re.sub(r'\?', r'?...', text)
+        
+        # Add comma pauses for better pacing
+        text = re.sub(r'\.', r'. ', text)
+        
+        return text
 
 
 slideshow_service = SlideshowService()

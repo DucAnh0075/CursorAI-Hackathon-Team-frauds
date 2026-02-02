@@ -16,7 +16,6 @@ class AIService:
         self.openai_key = settings.OPENAI_API_KEY
         self.minimax_key = settings.MINIMAX_API_KEY
         self.manus_key = settings.MANUS_API_KEY
-        self.gemini_key = settings.GEMINI_API_KEY
         self.manus_base_url = settings.MANUS_API_BASE_URL
         self.manus_model = settings.MANUS_MODEL
     
@@ -53,18 +52,6 @@ class AIService:
                 return await self._openai_response(message, images, conversation_history, reasoning_mode)
             except Exception as e:
                 print(f"[AI Service] OpenAI API error: {e}")
-                # Fall back to Gemini if OpenAI fails
-                if self.gemini_key:
-                    print(f"[AI Service] Falling back to Gemini")
-                    return await self._gemini_response(message, images, conversation_history, reasoning_mode)
-                return self._mock_response(message)
-        # Use Gemini if OpenAI not available
-        elif self.gemini_key:
-            try:
-                print(f"[AI Service] Using Gemini API, reasoning_mode: {reasoning_mode}")
-                return await self._gemini_response(message, images, conversation_history, reasoning_mode)
-            except Exception as e:
-                print(f"[AI Service] Gemini API error: {e}")
                 return self._mock_response(message)
         else:
             print(f"[AI Service] No API keys available, using mock response")
@@ -175,62 +162,6 @@ class AIService:
                                     yield content
                         except json.JSONDecodeError:
                             continue
-    
-    async def _gemini_response(
-        self,
-        message: str,
-        images: Optional[List[str]] = None,
-        history: Optional[List[Message]] = None,
-        reasoning_mode: bool = False
-    ) -> str:
-        """Generate response using Google Gemini API"""
-        async with httpx.AsyncClient() as client:
-            # Build content parts
-            parts = []
-            
-            # Add images first if present
-            if images:
-                for img in images:
-                    if img.startswith("data:image"):
-                        # Extract base64 data and mime type
-                        mime_type = img.split(";")[0].split(":")[1]
-                        base64_data = img.split(",")[1]
-                        parts.append({
-                            "inline_data": {
-                                "mime_type": mime_type,
-                                "data": base64_data
-                            }
-                        })
-            
-            # Add text message
-            parts.append({"text": message})
-            
-            # Build contents with history
-            contents = []
-            if history:
-                for msg in history:
-                    contents.append({
-                        "role": "user" if msg.role == "user" else "model",
-                        "parts": [{"text": msg.content}]
-                    })
-            
-            contents.append({
-                "role": "user",
-                "parts": parts
-            })
-            
-            response = await client.post(
-                f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key={self.gemini_key}",
-                headers={"Content-Type": "application/json"},
-                json={"contents": contents},
-                timeout=120.0
-            )
-            
-            if response.status_code == 200:
-                data = response.json()
-                return data["candidates"][0]["content"]["parts"][0]["text"]
-            else:
-                raise Exception(f"Gemini API error: {response.status_code} - {response.text}")
     
     async def _openai_response(
         self,
