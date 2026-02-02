@@ -191,7 +191,7 @@ export const chatService = {
     message: string,
     images: string[] = [],
     history: Message[] = [],
-    model: string = 'openai',
+    model: string = 'langchain',
     reasoningMode: boolean = false
   ): Promise<ChatResponse> {
     try {

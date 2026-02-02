@@ -10,7 +10,7 @@ from app.models.chat import Message
 
 
 class AIService:
-    """Service for AI-powered responses using Manus AI"""
+    """Service for AI-powered responses using LangChain with fallbacks"""
     
     def __init__(self):
         self.openai_key = settings.OPENAI_API_KEY
@@ -27,14 +27,33 @@ class AIService:
         message: str,
         images: Optional[List[str]] = None,
         conversation_history: Optional[List[Message]] = None,
-        model: str = "manus",
+        model: str = "langchain",
         reasoning_mode: bool = False
     ) -> str:
         """
         Generate AI response with specified model
-        Models: "manus", "openai", or "gemini"
+        Models: "langchain", "manus", "openai", or "gemini"
         reasoning_mode: enables step-by-step explanations with visual markers
         """
+        # Use LangChain as primary (Gemini/OpenAI via LangChain)
+        if model == "langchain" and (self.gemini_key or self.openai_key):
+            try:
+                print(f"[AI Service] Using LangChain, reasoning_mode: {reasoning_mode}")
+                return await self._langchain_response(message, images, conversation_history, reasoning_mode)
+            except Exception as e:
+                print(f"[AI Service] LangChain error: {e}")
+                # Fall back to Manus or direct providers
+                if self.manus_key:
+                    print(f"[AI Service] Falling back to Manus")
+                    return await self._manus_response(message, images, conversation_history, reasoning_mode)
+                if self.gemini_key:
+                    print(f"[AI Service] Falling back to Gemini")
+                    return await self._gemini_response(message, images, conversation_history, reasoning_mode)
+                if self.openai_key:
+                    print(f"[AI Service] Falling back to OpenAI")
+                    return await self._openai_response(message, images, conversation_history, reasoning_mode)
+                return self._mock_response(message)
+
         # Use Manus AI if selected and key is available (most reliable)
         if model == "manus" and self.manus_key:
             try:
@@ -77,7 +96,14 @@ class AIService:
                     return await self._gemini_response(message, images, conversation_history, reasoning_mode)
                 return self._mock_response(message)
         
-        # Default fallback order: Manus -> Gemini -> OpenAI -> Mock
+        # Default fallback order: LangChain -> Manus -> Gemini -> OpenAI -> Mock
+        if self.gemini_key or self.openai_key:
+            try:
+                print(f"[AI Service] Using LangChain (default)")
+                return await self._langchain_response(message, images, conversation_history, reasoning_mode)
+            except Exception as e:
+                print(f"[AI Service] LangChain error: {e}")
+
         if self.manus_key:
             try:
                 print(f"[AI Service] Using Manus AI API (default)")
@@ -100,6 +126,58 @@ class AIService:
         
         print(f"[AI Service] No API keys available, using mock response")
         return self._mock_response(message)
+
+    async def _langchain_response(
+        self,
+        message: str,
+        images: Optional[List[str]] = None,
+        history: Optional[List[Message]] = None,
+        reasoning_mode: bool = False
+    ) -> str:
+        """Generate response using LangChain wrappers (Gemini/OpenAI)."""
+        if images:
+            # Prefer native multimodal providers for images
+            if self.gemini_key:
+                return await self._gemini_response(message, images, history, reasoning_mode)
+            if self.openai_key:
+                return await self._openai_response(message, images, history, reasoning_mode)
+
+        try:
+            from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
+            if self.gemini_key:
+                from langchain_google_genai import ChatGoogleGenerativeAI
+                llm = ChatGoogleGenerativeAI(
+                    model=self.gemini_model,
+                    google_api_key=self.gemini_key,
+                    temperature=0.7
+                )
+            elif self.openai_key:
+                from langchain_openai import ChatOpenAI
+                llm = ChatOpenAI(
+                    model="gpt-4o-mini",
+                    api_key=self.openai_key,
+                    temperature=0.7
+                )
+            else:
+                raise Exception("No LangChain-supported API key available")
+
+            messages = []
+            if reasoning_mode:
+                messages.append(SystemMessage(content="You are a math tutor. Explain problems STEP BY STEP with numbered steps, calculations, and insights."))
+
+            if history:
+                for msg in history[-10:]:
+                    if msg.role == "user":
+                        messages.append(HumanMessage(content=msg.content))
+                    else:
+                        messages.append(AIMessage(content=msg.content))
+
+            messages.append(HumanMessage(content=message))
+
+            result = llm.invoke(messages)
+            return result.content
+        except Exception as e:
+            raise Exception(f"LangChain error: {e}")
     
     async def stream_response(
         self,
