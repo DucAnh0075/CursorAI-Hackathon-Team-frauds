@@ -37,26 +37,25 @@ class AIService:
         Models: "langchain", "minimax", "manus", "openai", or "gemini"
         reasoning_mode: enables step-by-step explanations with visual markers
         """
-        # Use LangChain as primary (Gemini/OpenAI via LangChain)
-        if model == "langchain" and (self.gemini_key or self.openai_key):
+        # Use LangChain as primary (Gemini via LangChain, prioritized)
+        if model == "langchain" and self.gemini_key:
             try:
-                print(f"[AI Service] Using LangChain, reasoning_mode: {reasoning_mode}")
+                print(f"[AI Service] Using LangChain (Gemini), reasoning_mode: {reasoning_mode}")
                 return await self._langchain_response(message, images, conversation_history, reasoning_mode)
             except Exception as e:
                 print(f"[AI Service] LangChain error: {e}")
-                # Fall back to Manus or direct providers
-                if self.minimax_key:
-                    print(f"[AI Service] Falling back to MiniMax")
-                    return await self._minimax_response(message, images, conversation_history, reasoning_mode)
-                if self.manus_key:
-                    print(f"[AI Service] Falling back to Manus")
-                    return await self._manus_response(message, images, conversation_history, reasoning_mode)
-                if self.gemini_key:
-                    print(f"[AI Service] Falling back to Gemini")
+                # Fall back to direct Gemini API
+                try:
+                    print(f"[AI Service] Falling back to direct Gemini API")
                     return await self._gemini_response(message, images, conversation_history, reasoning_mode)
-                if self.openai_key:
-                    print(f"[AI Service] Falling back to OpenAI")
-                    return await self._openai_response(message, images, conversation_history, reasoning_mode)
+                except Exception as e2:
+                    print(f"[AI Service] Direct Gemini also failed: {e2}")
+                    if self.openai_key:
+                        try:
+                            print(f"[AI Service] Falling back to OpenAI")
+                            return await self._openai_response(message, images, conversation_history, reasoning_mode)
+                        except Exception as e3:
+                            print(f"[AI Service] OpenAI also failed: {e3}")
                 return self._mock_response(message)
 
         # Use MiniMax if selected and key is available
@@ -120,37 +119,24 @@ class AIService:
                     return await self._gemini_response(message, images, conversation_history, reasoning_mode)
                 return self._mock_response(message)
         
-        # Default fallback order: LangChain -> MiniMax -> Manus -> Gemini -> OpenAI -> Mock
-        if self.gemini_key or self.openai_key:
-            try:
-                print(f"[AI Service] Using LangChain (default)")
-                return await self._langchain_response(message, images, conversation_history, reasoning_mode)
-            except Exception as e:
-                print(f"[AI Service] LangChain error: {e}")
-
-        if self.minimax_key:
-            try:
-                print(f"[AI Service] Using MiniMax API (default)")
-                return await self._minimax_response(message, images, conversation_history, reasoning_mode)
-            except Exception as e:
-                print(f"[AI Service] MiniMax error: {e}")
-
-        if self.manus_key:
-            try:
-                print(f"[AI Service] Using Manus AI API (default)")
-                return await self._manus_response(message, images, conversation_history, reasoning_mode)
-            except Exception as e:
-                print(f"[AI Service] Manus error: {e}")
-        
+        # Default fallback order: Gemini -> LangChain -> OpenAI -> Mock
         if self.gemini_key:
             try:
-                print(f"[AI Service] Using Gemini AI API (fallback)")
+                print(f"[AI Service] Using Gemini AI API (default)")
                 return await self._gemini_response(message, images, conversation_history, reasoning_mode)
             except Exception as e:
                 print(f"[AI Service] Gemini error: {e}")
+
+        if self.gemini_key or self.openai_key:
+            try:
+                print(f"[AI Service] Using LangChain (default fallback)")
+                return await self._langchain_response(message, images, conversation_history, reasoning_mode)
+            except Exception as e:
+                print(f"[AI Service] LangChain error: {e}")
         
         if self.openai_key:
             try:
+                print(f"[AI Service] Using OpenAI (default fallback)")
                 return await self._openai_response(message, images, conversation_history, reasoning_mode)
             except Exception as e:
                 print(f"[AI Service] OpenAI error: {e}")
@@ -259,8 +245,17 @@ class AIService:
         conversation_history: Optional[List[Message]] = None
     ) -> AsyncGenerator[str, None]:
         """
-        Stream AI response for real-time feedback using Manus AI
+        Stream AI response for real-time feedback
+        Falls back through: Gemini (non-streaming) -> Manus -> OpenAI -> mock
         """
+        if self.gemini_key:
+            # Gemini doesn't have streaming in our implementation, so yield full response
+            try:
+                result = await self._gemini_response(message, images, conversation_history)
+                yield result
+                return
+            except Exception as e:
+                print(f"[AI Service] Gemini stream fallback failed: {e}")
         if self.manus_key:
             async for chunk in self._manus_stream(message, images, conversation_history):
                 yield chunk
@@ -303,13 +298,17 @@ class AIService:
                     return data["choices"][0]["message"]["content"]
                 else:
                     print(f"Manus AI API error: {response.status_code} - {response.text}")
-                    # Fall back to OpenAI if available
+                    # Fall back to Gemini first, then OpenAI
+                    if self.gemini_key:
+                        return await self._gemini_response(message, images, history)
                     if self.openai_key:
                         return await self._openai_response(message, images, history)
                     return self._mock_response(message)
         except Exception as e:
             print(f"Manus AI error: {e}")
-            # Fall back to OpenAI if available
+            # Fall back to Gemini first, then OpenAI
+            if self.gemini_key:
+                return await self._gemini_response(message, images, history)
             if self.openai_key:
                 return await self._openai_response(message, images, history)
             return self._mock_response(message)
@@ -479,7 +478,9 @@ class AIService:
                 data = response.json()
                 return data["choices"][0]["message"]["content"]
             else:
-                raise Exception(f"OpenAI API error: {response.text}")
+                error_msg = f"OpenAI API error: {response.status_code} - {response.text}"
+                print(f"[API Error] {error_msg}")
+                raise Exception(error_msg)
     
     async def _openai_stream(
         self,

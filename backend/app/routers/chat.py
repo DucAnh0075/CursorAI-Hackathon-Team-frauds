@@ -20,7 +20,7 @@ async def send_message(request: ChatRequest):
     reasoning_mode: enables step-by-step explanations with visualizations
     """
     try:
-        model = request.model or "openai"
+        model = request.model or "langchain"
         reasoning_mode = request.reasoning_mode or False
         
         print(f"[API Call] Received message with model: {model}, reasoning: {reasoning_mode}")
